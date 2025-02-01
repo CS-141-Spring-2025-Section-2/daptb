@@ -6,6 +6,10 @@ import java.awt.*;
 import javax.swing.*;
 
 import java.awt.event.*;
+import javax.sound.sampled.*;
+
+import java.io.File;
+import java.io.IOException;
 
 
 public class Main {
@@ -25,8 +29,9 @@ class endScreen {
 		JFrame gameScreen = new JFrame("Game"); //Create window
 		gameScreen.setSize(1100, 840); //Set Dimensions
 		gameScreen.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		gameScreen.setResizable(false);
 		gameScreen.setTitle("2D Adventure"); //Title of window
+		
+		playMusic("src/daptb/GameVictory!.wav"); //Plays music
 		
 		gameScreen.setLocationRelativeTo(null);
 		gameScreen.setLayout(new BorderLayout());
@@ -41,7 +46,7 @@ class endScreen {
 		JLabel text = new JLabel("Congratulations! You have defeated the Final Boss and beat the game!!!", SwingConstants.CENTER);
 		JLabel text2 = new JLabel("Thank you for playing!", SwingConstants.CENTER);
 		JLabel text3 = new JLabel("Credits:", SwingConstants.CENTER);
-		JLabel text4 = new JLabel("Dayspring, Abdul, Phillip, Tepiwah, Benjamin: D.A.P.T.B.", SwingConstants.CENTER);
+		JLabel text4 = new JLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", SwingConstants.CENTER);
 		JLabel text5 = new JLabel("Press 'Esc' to exit.", SwingConstants.CENTER);
 		
 		//Set text attributes
@@ -57,7 +62,7 @@ class endScreen {
 		text5.setFont(textFont);
 		text5.setForeground(Color.RED);
 		
-		text.setAlignmentX(Component.CENTER_ALIGNMENT);
+		text.setAlignmentX(Component.CENTER_ALIGNMENT); //Center text
         text2.setAlignmentX(Component.CENTER_ALIGNMENT); 
         text3.setAlignmentX(Component.CENTER_ALIGNMENT);
         text4.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -78,16 +83,52 @@ class endScreen {
 
 		gameScreen.add(panel);
 			
+		
+		//Code for when pressing 'Esc' to exit
+		gameScreen.addKeyListener(new KeyListener() {
+		
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					gameScreen.dispose();
+					System.exit(0);
+				}
+			
+			}
+			@Override
+			public void keyReleased(KeyEvent e) {}
+		
+			@Override
+			public void keyTyped(KeyEvent e) {}
+		
+		});
+		
 		gameScreen.setVisible(true); //Allows window to pop up
-		
-		
-}
-
-class mainMenu {
+	}
 	
+	//Method to read music file
+	public static void playMusic(String filepath) {
+		try {
+			File musicFile = new File(filepath);
+			System.out.println("Looking for file at: " + musicFile.getAbsolutePath());
+			if (musicFile.exists()) {
+				AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
+				Clip clip = AudioSystem.getClip();
+				clip.open(audioStream);
+				clip.start();
+				clip.loop(Clip.LOOP_CONTINUOUSLY);
+			} else {
+				System.out.println("Music file not found!");
+			}
+		} catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+			e.printStackTrace();
+		}
+	}		
 }
-
-class newgame {
 	
-}
-}
+
+
+
+	
+
+		
