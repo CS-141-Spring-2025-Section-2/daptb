@@ -11,6 +11,8 @@ import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
 
+import javax.imageio.ImageIO;
+
 
 public class Main {
 
@@ -31,6 +33,18 @@ class endScreen {
 		gameScreen.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		gameScreen.setTitle("2D Adventure"); //Title of window
 		
+		JLayeredPane layeredPane = new JLayeredPane();
+		layeredPane.setPreferredSize(new Dimension(1100, 840));
+		
+		BackgroundPanel endscreen = new BackgroundPanel("src/daptb/2D Game End Screen.jpg"); //Adds background image
+		endscreen.setBounds(0, 0, 1100, 840);
+		layeredPane.add(endscreen, JLayeredPane.DEFAULT_LAYER);
+		
+		JPanel textpanel = new JPanel();
+		textpanel.setOpaque(false);
+		textpanel.setLayout(new BoxLayout(textpanel, BoxLayout.Y_AXIS));
+		textpanel.setBounds(0, 0, 1100, 840);
+		
 		playMusic("src/daptb/GameVictory!.wav"); //Plays music
 		
 		gameScreen.setLocationRelativeTo(null);
@@ -38,7 +52,7 @@ class endScreen {
 		
 		//Create Background
 		JPanel panel = new JPanel();
-		panel.setBackground(Color.BLACK);
+		panel.setOpaque(false);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 		panel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
@@ -50,15 +64,15 @@ class endScreen {
 		JLabel text5 = new JLabel("Press 'Esc' to exit.", SwingConstants.CENTER);
 		
 		//Set text attributes
-		Font textFont = new Font("Times New Roman", Font.BOLD, 24);
+		Font textFont = new Font("Times New Roman", Font.BOLD, 33);
 		text.setFont(textFont);
-		text.setForeground(Color.WHITE);
+		text.setForeground(Color.GRAY);
 		text2.setFont(textFont);
-		text2.setForeground(Color.WHITE);
+		text2.setForeground(Color.GRAY);
 		text3.setFont(textFont);
-		text3.setForeground(Color.WHITE);
+		text3.setForeground(Color.GRAY);
 		text4.setFont(textFont);
-		text4.setForeground(Color.WHITE);
+		text4.setForeground(Color.GRAY);
 		text5.setFont(textFont);
 		text5.setForeground(Color.RED);
 		
@@ -103,6 +117,10 @@ class endScreen {
 		
 		});
 		
+		textpanel.add(panel);
+		layeredPane.add(textpanel, JLayeredPane.PALETTE_LAYER);
+		
+		gameScreen.setContentPane(layeredPane);
 		gameScreen.setVisible(true); //Allows window to pop up
 	}
 	
@@ -124,10 +142,30 @@ class endScreen {
 			e.printStackTrace();
 		}
 	}		
-}
+} 
+
+
+
+class BackgroundPanel extends JPanel {
+	private Image backgroundImage;
 	
-
-
+	public BackgroundPanel(String filepath) {
+		try {
+			backgroundImage = ImageIO.read(new File(filepath));
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("Error: Background image not found!");
+		}
+	}
+	
+	@Override
+	protected void paintComponent (Graphics g) {
+		super.paintComponent(g);
+		if (backgroundImage != null) {
+			g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+		}
+	}
+}
 
 	
 
