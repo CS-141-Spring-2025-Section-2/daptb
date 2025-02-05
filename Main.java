@@ -134,6 +134,12 @@ class endScreen {
 			}
 			gameScreen.dispose();
 			SwingUtilities.invokeLater(GameClass::new);;
+		} else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+			if (clip != null && clip.isRunning()) {
+				clip.stop();
+			}
+			gameScreen.dispose();
+			System.exit(0);
 		}
 			
 	}
