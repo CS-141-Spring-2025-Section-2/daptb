@@ -53,7 +53,7 @@ class InstructionsPanel extends JPanel {
         setBackground(Color.BLACK);
 
         try {
-            backgroundImage = ImageIO.read(new File("src/daptb/gamephoto.jpg"));
+            backgroundImage = ImageIO.read(new File("src/daptb/gamephoto.jpg")); //**IF IMAGE ISN'T SHOWING ON YOUR COMPUTER, THIS IS THE PROBLEM LINE**
         } catch (IOException e) {
             e.printStackTrace();
         }

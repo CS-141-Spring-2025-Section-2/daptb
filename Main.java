@@ -42,7 +42,7 @@ class endScreen {
 		JLayeredPane layeredPane = new JLayeredPane();
 		layeredPane.setPreferredSize(gameScreen.getSize());
 		
-		BackgroundPanel endscreen = new BackgroundPanel("src/daptb/2D Game End Screen.jpg"); //Adds background image
+		BackgroundPanel endscreen = new BackgroundPanel("src/daptb/2D Game End Screen.jpg"); //Adds background image **IF IMAGE ISN'T SHOWING ON YOUR COMPUTER, THIS IS THE PROBLEM LINE**
 		endscreen.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width, Toolkit.getDefaultToolkit().getScreenSize().height);
 		layeredPane.add(endscreen, JLayeredPane.DEFAULT_LAYER);
 		
@@ -68,14 +68,14 @@ class endScreen {
 		JLabel text2 = new JLabel("Thank you for playing!", SwingConstants.CENTER);
 		JLabel text3 = new JLabel("Credits:", SwingConstants.CENTER);
 		JLabel text4 = new JLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", SwingConstants.CENTER);
-		JLabel text5 = new JLabel("Press 'Esc' to exit.", SwingConstants.CENTER);
+		JLabel text5 = new JLabel("Press 'Esc' to return to the Main Menu.", SwingConstants.CENTER);
 		
 		//Set text attributes
 		Font textFont = new Font("Times New Roman", Font.BOLD, 33);
 		text.setFont(textFont);
-		text.setForeground(Color.GRAY);
+		text.setForeground(Color.WHITE);
 		text2.setFont(textFont);
-		text2.setForeground(Color.GRAY);
+		text2.setForeground(Color.WHITE);
 		text3.setFont(textFont);
 		text3.setForeground(Color.GRAY);
 		text4.setFont(textFont);
@@ -127,18 +127,21 @@ class endScreen {
 		gameScreen.addKeyListener(new KeyListener() {
 		
 			@Override
-			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-					gameScreen.dispose();
-					System.exit(0);
-				}
-			
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			if (clip != null && clip.isRunning()) {
+				clip.stop(); //Pauses GameVictory music
 			}
+			gameScreen.dispose();
+			SwingUtilities.invokeLater(GameClass::new);;
+		}
+			
+	}
 			@Override
-			public void keyReleased(KeyEvent e) {}
+	public void keyReleased(KeyEvent e) {}
 		
 			@Override
-			public void keyTyped(KeyEvent e) {}
+	public void keyTyped(KeyEvent e) {}
 		
 		});
 		
@@ -150,6 +153,7 @@ class endScreen {
 		gameScreen.setVisible(true); //Allows window to pop up
 	}
 	
+	private static Clip clip; //Store clip as a static variable
 	//Method to read music file
 	public static void playMusic(String filepath) {
 		try {
@@ -157,7 +161,7 @@ class endScreen {
 			System.out.println("Looking for file at: " + musicFile.getAbsolutePath());
 			if (musicFile.exists()) {
 				AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
-				Clip clip = AudioSystem.getClip();
+				clip = AudioSystem.getClip();
 				clip.open(audioStream);
 				clip.start();
 				clip.loop(Clip.LOOP_CONTINUOUSLY);
@@ -189,6 +193,10 @@ class BackgroundPanel extends JPanel {
 		super.paintComponent(g);
 		if (backgroundImage != null) {
 			g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+			
+			//Dims background so text is more visible
+			g.setColor(new Color(0, 0, 0, 150));
+			g.fillRect(0, 0, getWidth(), getHeight());
 		}
 	}
 }
