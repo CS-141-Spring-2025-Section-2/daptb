@@ -32,7 +32,8 @@ class endScreen {
 	public static void start() {
 		
 		JFrame gameScreen = new JFrame("Game"); //Create window
-		gameScreen.setUndecorated(false);
+		gameScreen.setExtendedState(JFrame.MAXIMIZED_BOTH); //Make full screen
+		gameScreen.setUndecorated(true); //Set to true to hide window borders
 		gameScreen.setSize(1100, 840); //Set Dimensions
 		gameScreen.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		gameScreen.setTitle("2D Adventure"); //Title of window
@@ -42,7 +43,7 @@ class endScreen {
 		JLayeredPane layeredPane = new JLayeredPane();
 		layeredPane.setPreferredSize(gameScreen.getSize());
 		
-		BackgroundPanel endscreen = new BackgroundPanel("src/daptb/2D Game End Screen.jpg"); //Adds background image **IF IMAGE ISN'T SHOWING ON YOUR COMPUTER, THIS IS THE PROBLEM LINE**
+		backgroundPanel endscreen = new backgroundPanel("src/daptb/2D Game End Screen.jpg"); //Adds background image **IF IMAGE ISN'T SHOWING ON YOUR COMPUTER, THIS IS THE PROBLEM LINE**
 		endscreen.setBounds(0, 0, Toolkit.getDefaultToolkit().getScreenSize().width, Toolkit.getDefaultToolkit().getScreenSize().height);
 		layeredPane.add(endscreen, JLayeredPane.DEFAULT_LAYER);
 		
@@ -69,6 +70,7 @@ class endScreen {
 		JLabel text3 = new JLabel("Credits:", SwingConstants.CENTER);
 		JLabel text4 = new JLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", SwingConstants.CENTER);
 		JLabel text5 = new JLabel("Press 'Esc' to return to the Main Menu.", SwingConstants.CENTER);
+		JLabel text6 = new JLabel("Press Delete on Mac/Backspace on Windows to exit.", SwingConstants.CENTER);
 		
 		//Set text attributes
 		Font textFont = new Font("Times New Roman", Font.BOLD, 33);
@@ -81,13 +83,17 @@ class endScreen {
 		text4.setFont(textFont);
 		text4.setForeground(Color.GRAY);
 		text5.setFont(textFont);
-		text5.setForeground(Color.RED);
+		text5.setForeground(Color.GREEN);
+		text6.setFont(textFont);
+		text6.setForeground(Color.RED);
+		
 		
 		text.setAlignmentX(Component.CENTER_ALIGNMENT); //Center text
         text2.setAlignmentX(Component.CENTER_ALIGNMENT); 
         text3.setAlignmentX(Component.CENTER_ALIGNMENT);
         text4.setAlignmentX(Component.CENTER_ALIGNMENT);
         text5.setAlignmentX(Component.CENTER_ALIGNMENT);
+        text6.setAlignmentX(Component.CENTER_ALIGNMENT);
 		
         //Add text to window
 		panel.add(Box.createVerticalGlue());
@@ -100,6 +106,8 @@ class endScreen {
 		panel.add(text4);
 		panel.add(Box.createRigidArea(new Dimension(0, 20)));
 		panel.add(text5);
+		panel.add(Box.createRigidArea(new Dimension(0, 20)));
+		panel.add(text6);
 		panel.add(Box.createVerticalGlue());
 		
 		GridBagConstraints gbc = new GridBagConstraints();
@@ -182,10 +190,10 @@ class endScreen {
 
 
 
-class BackgroundPanel extends JPanel {
+class backgroundPanel extends JPanel {
 	private Image backgroundImage;
 	
-	public BackgroundPanel(String filepath) {
+	public backgroundPanel(String filepath) {
 		try {
 			backgroundImage = ImageIO.read(new File(filepath));
 		} catch (IOException e) {
