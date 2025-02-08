@@ -31,12 +31,12 @@ public class Main {
 class endScreen {
 	public static void start() {
 		
-		JFrame gameScreen = new JFrame("Game"); //Create window
+		JFrame gameScreen = new JFrame(); //Create window
 		gameScreen.setExtendedState(JFrame.MAXIMIZED_BOTH); //Make full screen
 		gameScreen.setUndecorated(true); //Set to true to hide window borders
 		gameScreen.setSize(1100, 840); //Set Dimensions
 		gameScreen.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		gameScreen.setTitle("2D Adventure"); //Title of window
+		gameScreen.setTitle("Credits"); //Title of window
 		gameScreen.setLocationRelativeTo(null);
 		gameScreen.setResizable(true);
 		
@@ -113,9 +113,9 @@ class endScreen {
 		GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.anchor = GridBagConstraints.CENTER; // <-- CHANGED: Ensures text remains centered
+        gbc.anchor = GridBagConstraints.CENTER; //Ensures text remains centered
         gbc.weighty = 1.0;
-        textpanel.add(panel, gbc); // <-- CHANGED: Add panel to GridBagLayout container
+        textpanel.add(panel, gbc); //Add panel to GridBagLayout container
 
        
 
@@ -125,7 +125,7 @@ class endScreen {
             public void componentResized(ComponentEvent e) {
                 Dimension newSize = gameScreen.getSize();
                 textpanel.setBounds(0, 0, newSize.width, newSize.height);
-                textpanel.revalidate();  // ✅ Forces text layout update
+                textpanel.revalidate();  //Forces text layout update
                 textpanel.repaint();// Update size
             }
         });
