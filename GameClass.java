@@ -125,8 +125,18 @@ class InstructionsPanel extends JPanel {
             startAnimation();
         } else {
             nextButton.setText("Begin Your Quest →");
+            nextButton.removeActionListener(nextButton.getActionListeners()[0]); // Remove previous listener
+            nextButton.addActionListener(e -> {
+                JFrame topLevelFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                if (topLevelFrame != null) {
+                    topLevelFrame.dispose(); // Close instructions window
+                }
+                SwingUtilities.invokeLater(LevelOnePlains::new); // Open Level One
+            });
         }
     }
+        
+    
 
     @Override
     protected void paintComponent(Graphics g) {
