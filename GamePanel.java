@@ -24,6 +24,20 @@ public class GamePanel extends JPanel implements Runnable{
 	public final int screenWidth = tileSize * maxScreenCol; // 1536 pixels
 	public final int screenHeight = tileSize * maxScreenRow; // 1152 pixels
 	
+	
+	// WORLD SETTINGS
+	public final int maxWorldCol = 100;  // Adjust for level length
+	public final int maxWorldRow = 24;   // Keep vertical the same
+	public final int worldWidth = tileSize * maxWorldCol;  
+	public final int worldHeight = tileSize * maxWorldRow;  
+
+	// CAMERA VARIABLES
+	public int cameraX = 0;  // Camera starting position
+	public int cameraY = 0;
+	public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
+	public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
+	
+	
 	// FPS
 	int FPS = 60;
 	
@@ -34,7 +48,7 @@ public class GamePanel extends JPanel implements Runnable{
 	
 	Thread gameThread;
 	
-	Player player = new Player(this, keyH);
+	public Player player = new Player(this, keyH);
 	
 
 	
