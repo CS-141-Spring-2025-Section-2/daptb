@@ -1,5 +1,6 @@
 package daptb;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 
 import entity.Player;
@@ -11,9 +12,13 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class GamePanel extends JPanel implements Runnable{
 
+	private BufferedImage img;
+	
 	// SCREEN SETTINGS
 	final int originalTileSize = 16; // 16x16 tile
 	final int scale = 3;
@@ -36,6 +41,8 @@ public class GamePanel extends JPanel implements Runnable{
 	public int cameraY = 0;
 	public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
 	public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
+	
+	
 	
 	
 	// FPS
@@ -125,6 +132,7 @@ public class GamePanel extends JPanel implements Runnable{
 
 	    draw(bufferGraphics);  // **Draw everything onto the buffer first**
 	    g2.drawImage(buffer, 0, 0, null); // **Then draw the buffer onto the screen**
+	    
 	    
 	    bufferGraphics.dispose();
 	    g2.dispose();
