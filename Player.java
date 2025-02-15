@@ -1,11 +1,14 @@
-package entity;
+package daptb;
 
 import java.awt.Graphics2D;
+
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
 import daptb.GamePanel;
 import daptb.KeyHandler;
+
+
 
 public class Player extends Entity {
 
