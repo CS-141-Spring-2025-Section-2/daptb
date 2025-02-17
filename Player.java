@@ -1,21 +1,17 @@
 package daptb;
 
 import java.awt.Graphics2D;
-
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
-import daptb.GamePanel;
-import daptb.KeyHandler;
-
-
+import javax.sound.sampled.*;
+import java.io.File;
 
 public class Player extends Entity {
-
     GamePanel gp;
     KeyHandler keyH;
 
-    public final int screenX;
+    public final int screenX; 
     public final int screenY;
 
     // Physics Variables
@@ -34,11 +30,54 @@ public class Player extends Entity {
     private int animationSpeed = 10;              // Number of update frames per frame switch
     private int currentFrame = 0;                 // Alternates between 0 and 1
 
-    // **REMOVED:** Jump cooldown variable has been removed
-    // private int jumpCooldown = 0;
-
     // Edge-trigger jump flag; set to false once a jump is triggered and reset when the key is released.
     private boolean canJump = true;
+
+    // NEW FIELDS for attack states:
+    private boolean canPunch = false;
+    private boolean canKick = false;
+
+    // Declare missing variables
+    private boolean punching = false;
+    private boolean kicking = false;
+
+    public void playJumpSound() {
+        new Thread(() -> {
+            try {
+                // Load the sound file
+                File soundFile = new File("src/daptb/JumpSound.wav");
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+
+                // Get a sound clip resource
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioStream);
+
+                // Play the sound immediately
+                clip.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    public void playAttackSound() {
+        new Thread(() -> {
+            try {
+                // Load the sound file
+                File soundFile = new File("src/daptb/AirAttack.wav");
+                AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundFile);
+
+                // Get a sound clip resource
+                Clip clip = AudioSystem.getClip();
+                clip.open(audioStream);
+
+                // Play the sound immediately
+                clip.start();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
 
     public Player(GamePanel gp, KeyHandler keyH) {
         this.gp = gp;
@@ -62,12 +101,22 @@ public class Player extends Entity {
 
     public void getPlayerImage() {
         try {
+            // Jump images
             jumpRight = ImageIO.read(getClass().getResourceAsStream("/player/knight-jumping-right-pixilart.png"));
-            right1 = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-right-pixilart-2.png"));
+            jumpLeft  = ImageIO.read(getClass().getResourceAsStream("/player/knight-jumping-left-pixilart.png"));
+
+            // Running and idle images
+            right1    = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-right-pixilart-2.png"));
             rightIdle = ImageIO.read(getClass().getResourceAsStream("/player/knight-facing-right.png"));
-            jumpLeft = ImageIO.read(getClass().getResourceAsStream("/player/knight-jumping-left-pixilart.png"));
-            left1 = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-left-pixilart.png"));
-            leftIdle = ImageIO.read(getClass().getResourceAsStream("/player/knight-facing-left.png"));
+            left1     = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-left-pixilart.png"));
+            leftIdle  = ImageIO.read(getClass().getResourceAsStream("/player/knight-facing-left.png"));
+
+            // Attack images for punching (key "I")
+            attackRight = ImageIO.read(getClass().getResource("/player/knight-punch-right.png"));
+            attackLeft  = ImageIO.read(getClass().getResource("/player/knight-punch-left.png"));
+            // Attack images for kicking (key "O")
+            attackRight2 = ImageIO.read(getClass().getResource("/player/knight-kick-right.png"));
+            attackLeft2  = ImageIO.read(getClass().getResource("/player/knight-kick-left.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -87,26 +136,42 @@ public class Player extends Entity {
             lastDirection = "right";
         }
 
-        // Jump Logic:
-        // Trigger a jump only if:
-        //   - "w" is pressed,
-        //   - the knight is on the ground,
-        //   - and the jump key is freshly tapped (canJump is true).
+        // --- Attack Logic (Edge-Triggered) ---
+        if (keyH.iPressed && canPunch) {
+            punching = true;
+            playAttackSound();  // Play sound only when the key is freshly pressed
+            canPunch = false;   // Prevent repeat sound until key is released
+        } else if (!keyH.iPressed) {
+            canPunch = true;    // Reset when key is released
+            punching = false;
+        }
+
+        if (keyH.oPressed && canKick) {
+            kicking = true;
+            playAttackSound();  // Play sound only when the key is freshly pressed
+            canKick = false;    // Prevent repeat sound until key is released
+        } else if (!keyH.oPressed) {
+            canKick = true;     // Reset when key is released
+            kicking = false;
+        }
+
+        // --- Jump Logic ---
         if (keyH.wPressed && onGround && canJump) {
+            playJumpSound();  // Play the sound as soon as jump is triggered
             velocityY = jumpStrength;
             jumping = true;
             onGround = false;
             canJump = false; // Prevent repeated jumping until key is released
         }
-        // Reset canJump when "w" is not pressed (edge-trigger reset)
+
+        // Reset canJump when "W" is not pressed (edge-trigger reset)
         if (!keyH.wPressed) {
             canJump = true;
         }
 
         // Apply Gravity
         velocityY += gravity;
-        if (velocityY > 10)
-            velocityY = 10; // Terminal velocity
+        if (velocityY > 10) velocityY = 10; // Terminal velocity
 
         // Update Vertical Position
         worldY += velocityY;
@@ -121,7 +186,7 @@ public class Player extends Entity {
             onGround = false;
         }
 
-        // Update running animation when moving horizontally and not jumping
+        // Running animation update
         if (movingHorizontally && !jumping) {
             animationCounter++;
             if (animationCounter >= animationSpeed) {
@@ -132,18 +197,15 @@ public class Player extends Entity {
             currentFrame = 0; // Default frame when not moving
         }
 
-        // Camera Movement: 
-        // Follows left/right always; vertical follows only when not jumping.
+        // Camera Movement
         gp.cameraX = worldX - gp.cameraOffsetX;
         if (!jumping) {
             gp.cameraY = worldY - gp.cameraOffsetY;
         }
 
         // Prevent Camera from going out of bounds horizontally
-        if (gp.cameraX < 0)
-            gp.cameraX = 0;
-        if (gp.cameraX > gp.worldWidth - gp.screenWidth)
-            gp.cameraX = gp.worldWidth - gp.screenWidth;
+        if (gp.cameraX < 0) gp.cameraX = 0;
+        if (gp.cameraX > gp.worldWidth - gp.screenWidth) gp.cameraX = gp.worldWidth - gp.screenWidth;
     }
 
     public void draw(Graphics2D g2) {
@@ -152,7 +214,13 @@ public class Player extends Entity {
         int screenY = worldY - gp.cameraY;
 
         // Choose image based on state and animation frame:
-        if (jumping) {
+        if (punching) {
+            // When punching, show the attack image based on lastDirection.
+            image = lastDirection.equals("right") ? attackRight : attackLeft;
+        } else if (kicking) {
+            // When kicking, show the kick image based on lastDirection.
+            image = lastDirection.equals("right") ? attackRight2 : attackLeft2;
+        } else if (jumping) {
             image = lastDirection.equals("right") ? jumpRight : jumpLeft;
         } else if (movingHorizontally) {
             if (lastDirection.equals("right")) {
@@ -161,7 +229,7 @@ public class Player extends Entity {
                 image = (currentFrame == 0) ? leftIdle : left1;
             }
         } else {
-            // Idle: face last direction
+            // Idle: face the last direction.
             image = lastDirection.equals("right") ? rightIdle : leftIdle;
         }
 

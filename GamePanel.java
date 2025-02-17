@@ -3,8 +3,7 @@ package daptb;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 
-import entity.Player;
-import tile.TileManager;
+
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -138,7 +137,6 @@ public class GamePanel extends JPanel implements Runnable{
 	    g2.dispose();
 	}
 }
-
 
 
 

@@ -1,4 +1,4 @@
-package tile;
+package daptb;
 
 import java.awt.Graphics2D;
 import java.io.IOException;
@@ -19,7 +19,7 @@ public class TileManager {
         getTileImage();
     }
 
-    public void getTileImage() {
+    public void getTileImage() { 
         try {
             tile[0] = new Tile();
             tile[0].image = ImageIO.read(getClass().getResourceAsStream("/tiles/surface-grass.png"));

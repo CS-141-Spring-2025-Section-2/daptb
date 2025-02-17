@@ -2,6 +2,7 @@ package daptb;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -23,14 +24,14 @@ public class LevelOnePlains extends JFrame {  // Make the class extend JFrame
         // Add any panels, components, or background images here
         
         gamePanel = new GamePanel();  //Initialize game panel
-        add(gamePanel);  // Add panel to frame
+        add(gamePanel);  // Add panel to frame 
         pack();
         
         setVisible(true); //Make the window visible
         
         gamePanel.startGameThread();
         
-        playMusic("src/daptb/LevelOnePlainsTheme.wav"); //Plays music
+        playMusic("sounds/LevelOnePlainsTheme.wav"); //Plays music
         
         addKeyListenerForNextLevel(); 
     }
@@ -52,23 +53,25 @@ public class LevelOnePlains extends JFrame {  // Make the class extend JFrame
         });
     }
     
-    private static Clip clip; //Store clip as a static variable
-	//Method to read music file
-	public static void playMusic(String filepath) {
-		try {
-			File musicFile = new File(filepath);
-			System.out.println("Looking for file at: " + musicFile.getAbsolutePath());
-			if (musicFile.exists()) {
-				AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
-				clip = AudioSystem.getClip();
-				clip.open(audioStream);
-				clip.start();
-				clip.loop(Clip.LOOP_CONTINUOUSLY);
-			} else {
-				System.out.println("Music file not found!");
-			}
-		} catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-			e.printStackTrace();
-		}
-	}		
+    public static void playMusic(String filepath) {
+        try {
+            URL soundURL = LevelOnePlains.class.getResource("/sounds/LevelOnePlainsTheme.wav"); // Load from resources
+            System.out.println("Trying to load sound from: " + soundURL); // Print the URL for debugging
+
+            if (soundURL == null) {
+                System.err.println("Sound file not found in resources: " + filepath);
+                return; // Exit early if the URL is null
+            }
+
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundURL); // Use the URL
+            Clip clip = AudioSystem.getClip(); 
+            clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+            clip.loop(Clip.LOOP_CONTINUOUSLY);
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            e.printStackTrace();
+        }
+    }
 }
