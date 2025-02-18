@@ -1,6 +1,9 @@
 package daptb;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import javax.imageio.ImageIO;
@@ -11,6 +14,26 @@ public class Player extends Entity {
     GamePanel gp;
     KeyHandler keyH;
 
+    public Player(GamePanel gp, KeyHandler keyH) {
+        //System.out.println("Player Constructor: gp = " + gp + ", keyH = " + keyH);
+        
+        if (gp == null) {
+            throw new IllegalArgumentException("GamePanel is NULL!");
+        }
+        if (keyH == null) {
+            throw new IllegalArgumentException("KeyHandler passed to Player is null!");
+        }
+    
+        this.gp = gp;
+        this.keyH = keyH;  
+
+        screenX = gp.screenWidth / 2 - (gp.tileSize / 2);
+        screenY = gp.screenHeight / 2 - (gp.tileSize / 2);
+
+        setDefaultValues();
+        getPlayerImage();
+    }
+
     public final int screenX; 
     public final int screenY;
 
@@ -20,7 +43,28 @@ public class Player extends Entity {
     int jumpStrength = -24;
     boolean jumping = false;
     boolean onGround = false;
+    
+    // Health (player has 100 HP)
+    private int health = 100;
+    private int maxHealth = 100;  // Maximum health
+    private int currentHealth = maxHealth;  // Player's current health
+    private boolean recentlyDamaged = false;  // Tracks if the player was recently hit
+    private int damageFlashDuration = 20;  // How long the health bar flashes
+    private int damageFlashCounter = 0; // Tracks the flash time
+    private boolean knockedBack = false;  // True when knockback is active
+    private int knockbackCounter = 0;  // How long knockback lasts
+    private int knockbackDuration = 15;  // Number of frames for knockback
+    private int knockbackSpeed = 5;  // Knockback distance per frame
+    private String knockbackDirection = "left";  // Stores direction of knockback
+    private boolean attacking = false;  // True when the player is attacking
+    private int attackCounter = 0;  // Counts attack duration
+    private int attackDuration = 30;  // Attack lasts for 30 frames (0.5 sec at 60 FPS)
+    private boolean attackOnCooldown = false;  // Prevents spamming
+    private int attackCooldown = 15;  // Frames before the next attack is allowed (0.25 sec at 60 FPS)
+    private int attackCooldownCounter = 0;  // Tracks cooldown time
+    private boolean enemyHit = false;
 
+    
     // Animation & Direction Variables
     String lastDirection = "right";             // Stores the last horizontal direction
     public boolean movingHorizontally = false;    // Indicates if moving left/right
@@ -40,7 +84,7 @@ public class Player extends Entity {
     // Declare missing variables
     private boolean punching = false;
     private boolean kicking = false;
-
+    
     public void playJumpSound() {
         new Thread(() -> {
             try {
@@ -78,17 +122,9 @@ public class Player extends Entity {
             }
         }).start();
     }
+    
 
-    public Player(GamePanel gp, KeyHandler keyH) {
-        this.gp = gp;
-        this.keyH = keyH;
 
-        screenX = gp.screenWidth / 2 - (gp.tileSize / 2);
-        screenY = gp.screenHeight / 2 - (gp.tileSize / 2);
-
-        setDefaultValues();
-        getPlayerImage();
-    }
 
     public void setDefaultValues() {
         worldX = 150;
@@ -96,7 +132,7 @@ public class Player extends Entity {
         worldY = getGroundLevel() - gp.tileSize;
         speed = 3;
         lastDirection = "right";
-        onGround = true;
+        onGround = true; 
     }
 
     public void getPlayerImage() {
@@ -121,8 +157,110 @@ public class Player extends Entity {
             e.printStackTrace();
         }
     }
+    
+    // Public getter for health
+    public int getHealth() {
+        return health;
+    }
+    
+    public void takeDamage(int amount, String enemyDirection) {
+        currentHealth -= amount;
+        if (currentHealth < 0) {
+            currentHealth = 0;
+        }
+
+        recentlyDamaged = true;
+        damageFlashCounter = damageFlashDuration;
+
+        // Trigger Knockback
+        if (enemyDirection.equals("left")) {
+            knockbackDirection = "left";  // Push player to the right
+        } else {
+            knockbackDirection = "right";  // Push player to the left
+        }
+
+        knockedBack = true;
+        knockbackCounter = knockbackDuration;
+
+        System.out.println("Player took " + amount + " damage! Remaining Health: " + currentHealth);
+
+        // Optional: Check if the player is dead
+        if (health <= 0) {
+            System.out.println("Player has died!");
+        }
+    }
+    
+    public void attack(String attackType) {
+        if (!attacking && !attackOnCooldown) {  // Prevents spam attacks
+            attacking = true;
+            attackCounter = attackDuration;  // Start attack duration timer
+            attackOnCooldown = true;  // Start cooldown
+            attackCooldownCounter = attackCooldown;  // Set cooldown time
+            
+            boolean enemyHit = false; // ✅ Declare variable inside method (resets per attack)
+
+            System.out.println("Player used " + attackType);
+
+            Rectangle attackHitbox;
+            int attackRange = 50;
+
+            if (lastDirection.equals("left")) {
+                attackHitbox = new Rectangle(worldX - attackRange, worldY, attackRange, gp.tileSize);
+            } else {
+                attackHitbox = new Rectangle(worldX + gp.tileSize, worldY, attackRange, gp.tileSize);
+            }
+
+            if (gp.enemy != null && gp.enemy.getCurrentHealth() > 0) {  // ✅ Ensure enemy is alive
+                Rectangle enemyHitbox = new Rectangle(gp.enemy.worldX, gp.enemy.worldY, gp.tileSize, gp.tileSize);
+                if (attackHitbox.intersects(enemyHitbox)) {
+                    enemyHit = true;  // ✅ Mark that we hit an enemy
+                    gp.enemy.takeDamage(20, lastDirection);
+                    System.out.println("Enemy HP: " + gp.enemy.getCurrentHealth());
+                }
+            }
+
+            // ✅ Play only one sound based on attack result
+            if (enemyHit) {
+                AudioPlayer.playSound("weak-enemy-hit.wav");  // ✅ Only play hit sound if attack lands
+            } else {
+                playAttackSound();  // ✅ Play air attack sound only if we missed
+            }
+        }
+    }
+    public void checkKickHit() {
+        for (Enemy enemy : gp.enemies) {  // Assuming gp.enemies stores all enemies
+            Rectangle kickHitbox;
+            
+            if (direction.equals("right")) {
+                kickHitbox = new Rectangle(worldX + gp.tileSize, worldY, gp.tileSize, gp.tileSize);
+            } else {
+                kickHitbox = new Rectangle(worldX - gp.tileSize, worldY, gp.tileSize, gp.tileSize);
+            }
+            
+            Rectangle enemyHitbox = new Rectangle(enemy.worldX, enemy.worldY, gp.tileSize, gp.tileSize);
+            
+            if (kickHitbox.intersects(enemyHitbox)) {
+                enemy.takeDamage(15, direction);  // Deal damage to the enemy
+            }
+        }
+    }
+
+
+
+    public boolean isAttacking() {
+        return attacking;
+    }
+
+    public boolean isAttackOnCooldown() {
+        return attackOnCooldown;
+    }
 
     public void update() {
+        if (keyH == null) {
+            System.out.println("KeyHandler is null in Player update()!");
+            return;  // Prevent further execution
+        }
+        
         movingHorizontally = false;
 
         // Horizontal Movement
@@ -148,20 +286,54 @@ public class Player extends Entity {
 
         if (keyH.oPressed && canKick) {
             kicking = true;
-            playAttackSound();  // Play sound only when the key is freshly pressed
-            canKick = false;    // Prevent repeat sound until key is released
+            playAttackSound();  // Play sound only when key is freshly pressed
+            canKick = false;  // Prevent repeat sound until key is released
+            attackCounter = 30;  // Set attack duration
         } else if (!keyH.oPressed) {
-            canKick = true;     // Reset when key is released
+            canKick = true; // Reset when key is released
             kicking = false;
+        }
+        if (attacking) {
+            attackCounter--;
+            if (attackCounter <= 0) {
+                attacking = false;  // Reset attack state after 0.5 sec
+            }
+        }
+        if (kicking) {
+            attackCounter--;
+            if (attackCounter == attackCounter - 10) {
+                checkKickHit();  // Check if the kick connects with an enemy
+            }
+            if (attackCounter <= 0) {
+                kicking = false;  // End kick attack
+            }
+        }
+
+
+        if (attackOnCooldown) {  // Reduce cooldown timer
+            attackCooldownCounter--;
+            if (attackCooldownCounter <= 0) {
+                attackOnCooldown = false;  // Cooldown ends, player can attack again
+            }
+        }
+
+        if (!attacking) {  // Only allow movement when not attacking
+            if (keyH.leftPressed) {
+                worldX -= speed;
+            } else if (keyH.rightPressed) {
+                worldX += speed;
+            }
         }
 
         // --- Jump Logic ---
-        if (keyH.wPressed && onGround && canJump) {
-            playJumpSound();  // Play the sound as soon as jump is triggered
+        if (keyH != null && keyH.wPressed && onGround && canJump) {
+            playJumpSound();
             velocityY = jumpStrength;
             jumping = true;
             onGround = false;
-            canJump = false; // Prevent repeated jumping until key is released
+            canJump = false;
+        } else if (keyH == null) {
+            System.out.println("ERROR: keyH is null in update()");
         }
 
         // Reset canJump when "W" is not pressed (edge-trigger reset)
@@ -196,16 +368,32 @@ public class Player extends Entity {
         } else {
             currentFrame = 0; // Default frame when not moving
         }
+        if (knockedBack) {
+            if (knockbackDirection.equals("left")) {
+                worldX -= knockbackSpeed;  // Move left if knocked back left
+            } else {
+                worldX += knockbackSpeed;  // Move right if knocked back right
+            }
 
-        // Camera Movement
-        gp.cameraX = worldX - gp.cameraOffsetX;
-        if (!jumping) {
-            gp.cameraY = worldY - gp.cameraOffsetY;
+            knockbackCounter--;
+            if (knockbackCounter <= 0) {
+                knockedBack = false;  // Stop knockback effect
+            }
+
+            // Ensure the player stays within the screen boundaries
+            if (worldX < 0) worldX = 0;  // Prevent moving off the left edge
+            if (worldX > gp.worldWidth - gp.tileSize) worldX = gp.worldWidth - gp.tileSize;  // Prevent moving off the right edge
+
+            // Camera Movement
+            gp.cameraX = worldX - gp.cameraOffsetX;
+            if (!jumping) {
+                gp.cameraY = worldY - gp.cameraOffsetY;
+            }
+
+            // Prevent Camera from going out of bounds horizontally
+            if (gp.cameraX < 0) gp.cameraX = 0;
+            if (gp.cameraX > gp.worldWidth - gp.screenWidth) gp.cameraX = gp.worldWidth - gp.screenWidth;
         }
-
-        // Prevent Camera from going out of bounds horizontally
-        if (gp.cameraX < 0) gp.cameraX = 0;
-        if (gp.cameraX > gp.worldWidth - gp.screenWidth) gp.cameraX = gp.worldWidth - gp.screenWidth;
     }
 
     public void draw(Graphics2D g2) {
@@ -214,7 +402,7 @@ public class Player extends Entity {
         int screenY = worldY - gp.cameraY;
 
         // Choose image based on state and animation frame:
-        if (punching) {
+        if (attacking) {
             // When punching, show the attack image based on lastDirection.
             image = lastDirection.equals("right") ? attackRight : attackLeft;
         } else if (kicking) {
@@ -232,8 +420,72 @@ public class Player extends Entity {
             // Idle: face the last direction.
             image = lastDirection.equals("right") ? rightIdle : leftIdle;
         }
-
+        
+        // Fix the disappearing issue when flashing
+        if (recentlyDamaged) {
+            damageFlashCounter--;
+            if (damageFlashCounter <= 0) {
+                recentlyDamaged = false;  // Reset flashing effect
+            } else if (damageFlashCounter % 10 < 5) {
+                return;  // Skip drawing every few frames (blinking effect)
+            }
+        }
+        
         g2.drawImage(image, screenX, screenY, gp.tileSize, gp.tileSize, null);
+        
+        // Draw Health Bar
+        drawHealthBar(g2, screenX, screenY - 10);
+    }
+    
+    // Method to Draw Health Bar Above Player
+    private void drawHealthBar(Graphics2D g2, int x, int y) {
+        int barWidth = gp.tileSize;  // Match player width
+        int barHeight = 5;  // Thin bar
+
+        // Health ratio (fills the bar proportionally)
+        int healthWidth = (int) ((double) currentHealth / maxHealth * barWidth);
+        
+        Color healthColor = Color.RED;
+        if (recentlyDamaged) {
+            healthColor = (damageFlashCounter % 10 < 5) ? Color.WHITE : Color.RED;  // Flash between red and white
+        }
+
+        // Draw Background Bar (Gray)
+        g2.setColor(Color.GRAY);
+        g2.fillRect(x, y, barWidth, barHeight);
+        
+        // Draw Flashing Health Bar
+        g2.setColor(healthColor);
+        g2.fillRect(x, y, healthWidth, barHeight);
+
+        // Draw Health Bar (Red)
+        g2.setColor(Color.RED);
+        g2.fillRect(x, y, healthWidth, barHeight);
+
+        // Draw Border
+        g2.setColor(Color.BLACK);
+        g2.drawRect(x, y, barWidth, barHeight);
+        
+        // Use Pixelated Font
+        try {
+            Font pixelFont = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/fonts/PixelFont.ttf")).deriveFont(14f);
+            g2.setFont(pixelFont);
+        } catch (Exception e) {
+            g2.setFont(new Font("Courier", Font.BOLD, 14));  // Fallback font
+        }
+        
+        // Display HP Number
+        g2.setColor(Color.BLACK);
+        g2.setFont(new Font("Arial", Font.BOLD, 12));
+        g2.drawString(currentHealth + " / " + maxHealth, x + barWidth + 5, y + barHeight);  // HP number beside bar
+
+        // Decrease Flash Counter
+        if (recentlyDamaged) {
+            damageFlashCounter--;
+            if (damageFlashCounter <= 0) {
+                recentlyDamaged = false;  // Stop flashing
+            }
+        }
     }
 
     // getGroundLevel returns the world Y coordinate for the top of the collidable ground.

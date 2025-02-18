@@ -1,3 +1,4 @@
+/*
 package daptb;
 
 import javax.swing.*;
@@ -33,7 +34,7 @@ public class LevelTwoDesert {
 		new LevelTwoDesert(); // Directly launch Level Two
 	}
 }
-
+*/
 
 
 
