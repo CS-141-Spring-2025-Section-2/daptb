@@ -8,6 +8,7 @@ import javax.imageio.ImageIO;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
+import javax.swing.Timer;
 
 import java.io.File;
 import java.io.IOException;
@@ -71,6 +72,12 @@ public class Enemy extends Entity {
         knockedBack = true;  // Apply knockback on death
         knockbackCounter = knockbackDuration;
         System.out.println("Enemy has died!");
+        // ✅ Trigger win screen
+        Timer timer = new Timer(1000, e -> {  // 1-second delay before showing win screen
+            gp.showYouWinScreen();
+        });
+        timer.setRepeats(false);  // Run only once
+        timer.start();
     }
     
     public int getCurrentHealth() {
@@ -186,10 +193,11 @@ public class Enemy extends Entity {
         }
 
         // Check if player is in range and attack only if not currently attacking
-        if (isPlayerInAttackRange() && attackCounter == 0) {
+        if (isPlayerInAttackRange() && attackCounter == 0 && !gp.player.isDead()) {  
             attacking = true;
             attackCounter = attackCooldown;  // Start cooldown
-            gp.player.takeDamage(10, direction);  // Damage player once per attack
+            gp.player.takeDamage(10, direction);  // Damage player only if alive
+       
             AudioPlayer.playSound("weak-enemy-hit.wav");   // Play attack sound
         }
 

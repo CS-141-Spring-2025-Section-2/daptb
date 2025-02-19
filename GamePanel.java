@@ -14,11 +14,13 @@ import java.io.InputStream;
 public class GamePanel extends JPanel implements Runnable {
 	KeyHandler keyH;  
     Player player;  
-    
-    public GamePanel() {
-        System.out.println("Initializing GamePanel...");
+    private JFrame parentFrame;  // Store reference to the main window
+
+    public GamePanel(JFrame parentFrame) {
+        this.parentFrame = parentFrame;  // Store the parent frame
 
         this.keyH = new KeyHandler(this);  // 🔹 Initialize KeyHandler FIRST
+        this.addKeyListener(keyH);  // 🔹 Attach KeyHandler to listen for inputs
         //System.out.println("KeyHandler created: " + keyH);
 
        // System.out.println("KeyHandler instance in GamePanel: " + keyH);
@@ -28,8 +30,10 @@ public class GamePanel extends JPanel implements Runnable {
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
         this.setBackground(Color.CYAN);
         this.setDoubleBuffered(true);
-        this.addKeyListener(keyH);  // 🔹 Attach KeyHandler to listen for inputs
-        this.setFocusable(true);
+        
+        this.setFocusable(true);  // Make the panel focusable to receive key events
+        this.requestFocusInWindow();  // Request focus to start listening for key inputs
+
 
         enemy = new Enemy(this, 500, player.worldY);
         
@@ -58,7 +62,8 @@ public class GamePanel extends JPanel implements Runnable {
     public int cameraY = 0;
     public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
     public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
-    
+    private boolean isPaused = false;  // Tracks if the game is paused
+
     
 
     // FPS
@@ -88,6 +93,28 @@ public class GamePanel extends JPanel implements Runnable {
         gameThread = new Thread(this);
         gameThread.start();
     }
+
+    public void pauseGame() {
+        isPaused = true;  // Set pause flag
+    }
+
+    public void resumeGame() {
+        isPaused = false;  // Clear pause flag
+    }
+    
+    public void showYouWinScreen() {
+        if (parentFrame == null) {
+            System.err.println("Error: parentFrame is null.");
+            return;
+        }
+
+        AudioPlayer.stopMusic();  // Stop current music
+        parentFrame.getContentPane().removeAll();  // Remove the game panel
+        parentFrame.add(new YouWinPanel(parentFrame));  // Show You Win screen
+        parentFrame.revalidate();  // Refresh window
+        parentFrame.repaint();  // Redraw window
+    }
+
 
     @Override
     public void run() {
@@ -120,6 +147,8 @@ public class GamePanel extends JPanel implements Runnable {
 
     // Player and enemy controls
     public void update() {
+    	if (isPaused) return;  // 🔴 Prevent updates when paused
+
         player.update();
         if (enemy != null) {
         	enemy.update();
@@ -128,6 +157,19 @@ public class GamePanel extends JPanel implements Runnable {
 
            
     }
+    
+    public void showGameOverScreen() {
+        if (parentFrame == null) {
+            System.err.println("Error: parentFrame is null.");
+            return;  // Prevent crash if frame is missing
+        }
+
+        parentFrame.getContentPane().removeAll();  // Remove game panel
+        parentFrame.add(new GameOverPanel(parentFrame));  // Add Game Over screen
+        parentFrame.revalidate();  // Refresh frame layout
+        parentFrame.repaint();  // Redraw screen
+    }
+
 
     public void draw(Graphics2D g2) {
         // **Draw tiles first (background)**

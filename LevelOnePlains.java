@@ -20,39 +20,32 @@ public class LevelOnePlains extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        System.out.println("Creating GamePanel...");
-        this.gamePanel = new GamePanel();  // 🔹 Assign GamePanel correctly
-        //System.out.println("GamePanel created: " + gamePanel);
-
-        add(gamePanel);  // 🔹 Add it to the frame
-        pack();
-
+        this.gamePanel = new GamePanel(this);  // Pass JFrame to GamePanel
+        add(gamePanel);  // Add game panel to window
+        pack();  // Fit components
+        gamePanel.requestFocusInWindow();  // Focus the panel for key inputs
+        gamePanel.startGameThread();  // Start game loop
         setVisible(true);
         gamePanel.startGameThread();  
 
-        playMusic("sounds/LevelOnePlainsTheme.wav"); 
-        addKeyListenerForNextLevel(); 
-    }
+        AudioPlayer.playMusic("LevelOnePlainsTheme.wav");  // Play level music
+        
+        }
+
+        
+       
+    
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(LevelOnePlains::new); 
     }
-
+    
 
 
     // KeyListener to proceed to next level or perform other actions (e.g., level progression)
-    public void addKeyListenerForNextLevel() {
-        addKeyListener(new java.awt.event.KeyAdapter() {
-            @Override
-            public void keyPressed(java.awt.event.KeyEvent e) {
-                if (e.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER) { // Detect "Enter" key press
-                    dispose(); // Close Level One window
-                    SwingUtilities.invokeLater(FinalLevelVolcanoCastle::new); // Open next level (Level Two)
-                }
-            }
-        });
-    }
+   
     
+   
     public static void playMusic(String filepath) {
         try {
             URL soundURL = LevelOnePlains.class.getResource("/sounds/LevelOnePlainsTheme.wav"); // Load from resources

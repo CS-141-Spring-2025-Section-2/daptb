@@ -84,6 +84,8 @@ public class Player extends Entity {
     // Declare missing variables
     private boolean punching = false;
     private boolean kicking = false;
+    private boolean isDead = false;  // 🔴 Tracks if player is dead
+
     
     public void playJumpSound() {
         new Thread(() -> {
@@ -130,7 +132,7 @@ public class Player extends Entity {
         worldX = 150;
         // Set starting worldY so that the knight’s feet (worldY + tileSize) are on the ground.
         worldY = getGroundLevel() - gp.tileSize;
-        speed = 3;
+        speed = 2;
         lastDirection = "right";
         onGround = true; 
     }
@@ -164,15 +166,12 @@ public class Player extends Entity {
     }
     
     public void takeDamage(int amount, String enemyDirection) {
+        if (isDead) return;  // 🛑 Prevent damage if already dead
+
         currentHealth -= amount;
-        if (currentHealth < 0) {
-            currentHealth = 0;
-        }
-
-        recentlyDamaged = true;
-        damageFlashCounter = damageFlashDuration;
-
-        // Trigger Knockback
+        
+        if (!isDead) {  
+     // Trigger Knockback
         if (enemyDirection.equals("left")) {
             knockbackDirection = "left";  // Push player to the right
         } else {
@@ -181,15 +180,54 @@ public class Player extends Entity {
 
         knockedBack = true;
         knockbackCounter = knockbackDuration;
-
+        }
         System.out.println("Player took " + amount + " damage! Remaining Health: " + currentHealth);
+        
+     // 🩸 Check if incoming damage will kill the player
+        if (currentHealth - amount <= 0) {
+            currentHealth = 0;  // Set health to zero
+            die();  // Trigger death sequence immediately
+            return;  // Stop further processing
+        }
+            
+         // Check if player is dead
+         if (currentHealth <= 0) {
+             System.out.println("Player has died!");  // Debugging info
+             
+             gp.pauseGame();  // 🔴 Pause all game actions
+             AudioPlayer.stopMusic();  // 🔇 Stop background music
+
+             
+             gp.showGameOverScreen();  // Show Game Over screen (we'll implement this next) 
+            }
+        
+
+        recentlyDamaged = true;
+        damageFlashCounter = damageFlashDuration;
+
+        
 
         // Optional: Check if the player is dead
         if (health <= 0) {
             System.out.println("Player has died!");
         }
-    }
+      }
     
+    private void die() {
+        if (isDead) return;  // 🛑 Prevent multiple calls
+        isDead = true;  // Mark player as dead
+
+        System.out.println("Player has died!");  // Debug log
+
+        gp.pauseGame();  // 🔴 Pause all actions
+        AudioPlayer.stopMusic();  // 🔇 Stop background music
+        gp.showGameOverScreen();  // Show Game Over screen
+    }
+    public boolean isDead() {
+        return isDead;  // ✅ Returns the player's death state
+    }
+
+
     public void attack(String attackType) {
         if (!attacking && !attackOnCooldown) {  // Prevents spam attacks
             attacking = true;
@@ -255,7 +293,29 @@ public class Player extends Entity {
         return attackOnCooldown;
     }
 
+    private void handleKnockback() {
+        int knockbackSpeed = 5;  // Adjust as needed
+
+        if (knockbackDirection.equals("left")) {
+            worldX -= knockbackSpeed;  // Knock player left
+        } else {
+            worldX += knockbackSpeed;  // Knock player right
+        }
+
+        knockbackCounter--;
+        if (knockbackCounter <= 0) {
+            knockedBack = false;  // ✅ End knockback after duration
+        }
+    }
+
     public void update() {
+    	 if (isDead) {
+    		 if (knockedBack) handleKnockback();  // ✅ Allow knockback even after death
+         return;  // 🛑 Prevent other actions when dead
+    	 }
+      // ✅ Process knockback for alive player
+         if (knockedBack) handleKnockback();
+    	 
         if (keyH == null) {
             System.out.println("KeyHandler is null in Player update()!");
             return;  // Prevent further execution
