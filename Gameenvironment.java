@@ -1,23 +1,29 @@
 package sem1;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 
-public class Gameenvironment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener {
-    private static final int WIDTH = 800;
-    private static final int HEIGHT = 600;
+public class Gameenvironment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
+    private int WIDTH;  // Dynamic width
+    private int HEIGHT; // Dynamic height
     private static final int PLAYER_SPEED = 5;
     private static final int BULLET_SPEED = 10;
     private static final int PLAYER_HEALTH = 50;
     private static final int ENEMY_HEALTH = 5;
     private static final int ENEMIES_PER_WAVE = 5;
     private static final int TOTAL_ENEMIES = 20;
-    private static final int ENEMY_SHOOT_DISTANCE = 200;
+    private static final int ENEMY_SHOOT_DISTANCE = 300; // Increased shooting distance
     private static final int ENEMY_SPEED = 2;
     private static final int ENEMY_STOP_DISTANCE = 100; // Distance at which enemies stop moving
+    private static final int BOMB_RANGE = 200; // Range of the bomb
+    private static final int BOMB_COOLDOWN = 1; // Bomb can be used once per level
 
     private int playerX, playerY;
     private int playerHealth;
@@ -34,16 +40,29 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
     private double playerAngle; // Angle for player rotation
     private String playerName; // Player's name
     private boolean showLevelCompleteBanner; // Flag to show level complete banner
+    private Image backgroundImage; // Background image for each level
+    private Clip shootSound; // Sound clip for shooting
+    private Clip backgroundMusic; // Sound clip for background music
+    private boolean isEnemySpawning; // Flag to control staggered enemy spawning
+    private long lastEnemySpawnTime; // Time of last enemy spawn
+    private int currentWave; // Current wave of enemies
+    private int bombUsesRemaining; // Number of bomb uses remaining
+    private boolean isPlayerBoxedIn; // Flag to check if the player is boxed in by enemies
 
     public Gameenvironment() {
+        // Initialize dynamic width and height
+        WIDTH = 800;
+        HEIGHT = 600;
+
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setFocusable(true);
         addKeyListener(this);
         addMouseListener(this);
         addMouseMotionListener(this);
+        addComponentListener(this); // Add component listener for resizing
 
-        playerX = WIDTH / 2;
-        playerY = HEIGHT - 100;
+        playerX = WIDTH / 2 - 25; // Center player horizontally
+        playerY = HEIGHT / 2 - 25; // Center player vertically
         playerHealth = PLAYER_HEALTH;
         isGameRunning = true;
         enemies = new ArrayList<>();
@@ -57,19 +76,51 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         mouseY = playerY;
         playerAngle = 0; // Initial angle
         showLevelCompleteBanner = false;
+        isEnemySpawning = false;
+        lastEnemySpawnTime = 0;
+        currentWave = 0;
+        bombUsesRemaining = BOMB_COOLDOWN;
+        isPlayerBoxedIn = false;
 
         // Ask for player's name
-        playerName = JOptionPane.showInputDialog(this, "Enter your name:", "Welcome to the Game!", JOptionPane.PLAIN_MESSAGE);
+        playerName = JOptionPane.showInputDialog(this, "Enter your name:", JOptionPane.PLAIN_MESSAGE);
         if (playerName == null || playerName.trim().isEmpty()) {
             playerName = "Player"; // Default name
         }
 
         loadCustomFont();
-        spawnEnemyWave();
+        loadBackgroundImage(); // Load background for the current level
+        loadShootSound(); // Load the shooting sound
+        loadBackgroundMusic(); // Load background music
+        startLevel();
     }
+
+    @Override
+    public void componentResized(ComponentEvent e) {
+        // Update width and height when the window is resized
+        WIDTH = getWidth();
+        HEIGHT = getHeight();
+
+        // Reposition the player to the center
+        playerX = WIDTH / 2 - 25;
+        playerY = HEIGHT / 2 - 25;
+
+        // Repaint the game to reflect the new size
+        repaint();
+    }
+
+    @Override
+    public void componentMoved(ComponentEvent e) {}
+
+    @Override
+    public void componentShown(ComponentEvent e) {}
+
+    @Override
+    public void componentHidden(ComponentEvent e) {}
 
     private void loadCustomFont() {
         try {
+            // Load custom font from the classpath
             customFont = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("custom_font.ttf")).deriveFont(24f);
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(customFont);
@@ -79,13 +130,131 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         }
     }
 
+    private void loadBackgroundImage() {
+        String imagePath = "";
+        switch (currentLevel) {
+            case 1:
+                imagePath = "egypt_background.jpg"; // Ancient Egypt
+                break;
+            case 2:
+                imagePath = "medieval_background.jpg"; // Medieval Europe
+                break;
+            case 3:
+                imagePath = "ww1_background.jpg"; // World War I
+                break;
+            case 4:
+                imagePath = "ww2_background.jpg"; // World War II
+                break;
+            case 5:
+                imagePath = "future_background.jpg"; // Future Warfare
+                break;
+            default:
+                imagePath = "default_background.jpg"; // Default background
+                break;
+        }
+
+        try {
+            backgroundImage = new ImageIcon(getClass().getResource(imagePath)).getImage();
+        } catch (Exception e) {
+            System.out.println("Background image not found! Using gradient background instead.");
+            backgroundImage = null;
+        }
+    }
+
+    private void loadShootSound() {
+        try {
+            // Load the sound file from the classpath
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("ak-47-14501.wav"));
+            shootSound = AudioSystem.getClip();
+            shootSound.open(audioInputStream);
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | NullPointerException e) {
+            System.out.println("Error loading shoot sound: " + e.getMessage());
+        }
+    }
+
+    private void loadBackgroundMusic() {
+        try {
+            // Load the background music file from the classpath
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("background_music.wav"));
+            backgroundMusic = AudioSystem.getClip();
+            backgroundMusic.open(audioInputStream);
+
+            // Set volume to 50% to ensure it's not too loud
+            FloatControl gainControl = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
+            gainControl.setValue(-10.0f); // Reduce volume by 10 decibels
+
+            backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY); // Loop the background music
+            backgroundMusic.start(); // Start playing the background music
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | NullPointerException e) {
+            System.out.println("Error loading background music: " + e.getMessage());
+        }
+    }
+
+    private void playShootSound() {
+        if (shootSound != null) {
+            shootSound.setFramePosition(0); // Rewind the sound to the beginning
+            shootSound.start(); // Play the sound
+        }
+    }
+
+    private void startLevel() {
+        isEnemySpawning = true;
+        lastEnemySpawnTime = System.currentTimeMillis();
+        currentWave = 0;
+        playerHealth = PLAYER_HEALTH; // Reset player health
+        bombUsesRemaining = BOMB_COOLDOWN; // Reset bomb uses
+    }
+
     private void spawnEnemyWave() {
         Random random = new Random();
         for (int i = 0; i < ENEMIES_PER_WAVE && enemiesRemaining > 0; i++) {
             int enemyX = random.nextInt(WIDTH - 50);
             int enemyY = random.nextInt(HEIGHT / 2);
-            enemies.add(new Enemy(enemyX, enemyY, ENEMY_HEALTH, currentLevel));
+            String era = getEraForLevel(currentLevel);
+            Enemy enemy = createEnemy(enemyX, enemyY, ENEMY_HEALTH, currentLevel, era);
+
+            // Randomly enable some enemies to shoot from afar
+            if (random.nextBoolean()) {
+                enemy.setCanShootFromAfar(true);
+            }
+
+            enemies.add(enemy);
             enemiesRemaining--;
+        }
+        currentWave++;
+    }
+
+    private String getEraForLevel(int level) {
+        switch (level) {
+            case 1:
+                return "Ancient";
+            case 2:
+                return "Medieval";
+            case 3:
+                return "WW1";
+            case 4:
+                return "WW2";
+            case 5:
+                return "Future";
+            default:
+                return "Unknown";
+        }
+    }
+
+    private Enemy createEnemy(int x, int y, int health, int level, String era) {
+        switch (level) {
+            case 1:
+                return new Enemy(x, y, health, "Pharaoh", new Color(255, 215, 0), level, 2, "circle", era); // Ancient Egypt (gold)
+            case 2:
+                return new Enemy(x, y, health, "Knight", new Color(105, 105, 105), level, 3, "rectangle", era); // Medieval Europe (dark gray)
+            case 3:
+                return new Enemy(x, y, health, "Soldier", new Color(107, 142, 35), level, 4, "triangle", era); // World War I (olive green)
+            case 4:
+                return new Enemy(x, y, health, "Tank", new Color(34, 139, 34), level, 5, "rectangle", era); // World War II (green)
+            case 5:
+                return new Enemy(x, y, health, "Robot", new Color(0, 191, 255), level, 6, "circle", era); // Future Warfare (neon blue)
+            default:
+                return new Enemy(x, y, health, "Enemy", Color.RED, level, 2, "circle", era); // Default enemy
         }
     }
 
@@ -93,14 +262,22 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // Draw custom gradient background
-        Graphics2D g2d = (Graphics2D) g;
-        GradientPaint gradient = new GradientPaint(0, 0, new Color(30, 30, 60), WIDTH, HEIGHT, new Color(10, 10, 30));
-        g2d.setPaint(gradient);
-        g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        // Draw background
+        if (backgroundImage != null) {
+            g.drawImage(backgroundImage, 0, 0, WIDTH, HEIGHT, this);
+        } else {
+            // Fallback gradient background
+            Graphics2D g2d = (Graphics2D) g;
+            GradientPaint gradient = new GradientPaint(0, 0, new Color(30, 30, 60), WIDTH, HEIGHT, new Color(10, 10, 30));
+            g2d.setPaint(gradient);
+            g2d.fillRect(0, 0, WIDTH, HEIGHT);
+        }
 
-        // Draw player name banner
+        // Draw player name banner at the top of the window
         drawPlayerNameBanner(g);
+
+        // Draw level name
+        drawLevelName(g);
 
         // Draw player
         drawPlayer(g);
@@ -136,6 +313,9 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         g.drawString("Level: " + currentLevel, 10, 60);
         g.drawString("Enemies Remaining: " + (enemiesRemaining + enemies.size()), 10, 90);
 
+        // Draw bomb uses remaining
+        g.drawString("Bombs: " + bombUsesRemaining, 10, 120);
+
         // Draw level complete banner if needed
         if (showLevelCompleteBanner) {
             drawLevelCompleteBanner(g);
@@ -145,10 +325,38 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
     private void drawPlayerNameBanner(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setColor(new Color(255, 255, 255, 150)); // Semi-transparent white
-        g2d.fillRoundRect(10, 10, 200, 40, 20, 20); // Rounded rectangle
+        g2d.fillRoundRect(WIDTH / 2 - 150, 10, 300, 40, 20, 20); // Rounded rectangle centered at the top
         g2d.setColor(Color.BLACK);
         g2d.setFont(customFont.deriveFont(20f));
-        g2d.drawString("Player: " + playerName, 20, 35); // Player name
+        g2d.drawString("Player: " + playerName, WIDTH / 2 - 130, 35); // Player name centered
+    }
+
+    private void drawLevelName(Graphics g) {
+        Graphics2D g2d = (Graphics2D) g;
+        String levelName = "";
+        switch (currentLevel) {
+            case 1:
+                levelName = "Ancient Egypt";
+                break;
+            case 2:
+                levelName = "Medieval Europe";
+                break;
+            case 3:
+                levelName = "World War I";
+                break;
+            case 4:
+                levelName = "World War II";
+                break;
+            case 5:
+                levelName = "Future Warfare";
+                break;
+            default:
+                levelName = "Unknown Level";
+                break;
+        }
+        g2d.setColor(Color.MAGENTA);
+        g2d.setFont(customFont.deriveFont(30f));
+        g2d.drawString(levelName, WIDTH / 2 - 100, HEIGHT - 20); // Display level name at the bottom
     }
 
     private void drawPlayer(Graphics g) {
@@ -189,18 +397,19 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         g2d.setColor(Color.WHITE);
         g2d.setFont(customFont.deriveFont(30f));
         g2d.drawString("Level " + currentLevel + " Complete!", WIDTH / 2 - 130, HEIGHT / 2 - 50);
+        g2d.drawString("Advance?", WIDTH / 2 - 50, HEIGHT / 2 - 20);
 
         // Draw "Continue" button
         g2d.setColor(Color.GREEN);
-        g2d.fillRect(WIDTH / 2 - 120, HEIGHT / 2 - 20, 100, 40);
+        g2d.fillRect(WIDTH / 2 - 120, HEIGHT / 2 + 10, 100, 40);
         g2d.setColor(Color.BLACK);
-        g2d.drawString("Continue", WIDTH / 2 - 110, HEIGHT / 2 + 10);
+        g2d.drawString("Yes", WIDTH / 2 - 100, HEIGHT / 2 + 40);
 
         // Draw "Quit" button
         g2d.setColor(Color.RED);
-        g2d.fillRect(WIDTH / 2 + 20, HEIGHT / 2 - 20, 100, 40);
+        g2d.fillRect(WIDTH / 2 + 20, HEIGHT / 2 + 10, 100, 40);
         g2d.setColor(Color.BLACK);
-        g2d.drawString("Quit", WIDTH / 2 + 50, HEIGHT / 2 + 10);
+        g2d.drawString("No", WIDTH / 2 + 50, HEIGHT / 2 + 40);
     }
 
     @Override
@@ -215,7 +424,35 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
             double bulletSpeedX = BULLET_SPEED * Math.cos(playerAngle);
             double bulletSpeedY = BULLET_SPEED * Math.sin(playerAngle);
             playerBullets.add(new Bullet(playerX + 25, playerY + 25, bulletSpeedX, bulletSpeedY, Color.RED)); // Red bullets
+            playShootSound(); // Play the shooting sound
         }
+        if (key == KeyEvent.VK_G && bombUsesRemaining > 0) {
+            activateBomb();
+            bombUsesRemaining--;
+        }
+    }
+
+    private void activateBomb() {
+        // Find the three closest enemies
+        ArrayList<Enemy> closestEnemies = new ArrayList<>();
+        for (Enemy enemy : enemies) {
+            double distance = Math.hypot(playerX - enemy.x, playerY - enemy.y);
+            if (distance <= BOMB_RANGE) {
+                closestEnemies.add(enemy);
+                if (closestEnemies.size() >= 3) {
+                    break;
+                }
+            }
+        }
+
+        // Kill the closest enemies
+        for (Enemy enemy : closestEnemies) {
+            animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10)); // Add death animation
+            enemies.remove(enemy);
+        }
+
+        // Free the player if boxed in
+        isPlayerBoxedIn = false;
     }
 
     @Override
@@ -250,15 +487,16 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
             int y = e.getY();
 
             // Check if "Continue" button is clicked
-            if (x >= WIDTH / 2 - 120 && x <= WIDTH / 2 - 20 && y >= HEIGHT / 2 - 20 && y <= HEIGHT / 2 + 20) {
+            if (x >= WIDTH / 2 - 120 && x <= WIDTH / 2 - 20 && y >= HEIGHT / 2 + 10 && y <= HEIGHT / 2 + 50) {
                 showLevelCompleteBanner = false;
                 currentLevel++;
                 enemiesRemaining = TOTAL_ENEMIES;
-                spawnEnemyWave();
+                loadBackgroundImage(); // Load new background for the next level
+                startLevel();
             }
 
             // Check if "Quit" button is clicked
-            if (x >= WIDTH / 2 + 20 && x <= WIDTH / 2 + 120 && y >= HEIGHT / 2 - 20 && y <= HEIGHT / 2 + 20) {
+            if (x >= WIDTH / 2 + 20 && x <= WIDTH / 2 + 120 && y >= HEIGHT / 2 + 10 && y <= HEIGHT / 2 + 50) {
                 System.exit(0);
             }
         }
@@ -290,13 +528,22 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
 
     private void updateGame() {
         // Update player position based on keys pressed
-        if (keysPressed[0] && playerX > 0) playerX -= PLAYER_SPEED; // Left
-        if (keysPressed[1] && playerX < WIDTH - 50) playerX += PLAYER_SPEED; // Right
-        if (keysPressed[2] && playerY > 0) playerY -= PLAYER_SPEED; // Up
-        if (keysPressed[3] && playerY < HEIGHT - 50) playerY += PLAYER_SPEED; // Down
+        if (!isPlayerBoxedIn) {
+            if (keysPressed[0] && playerX > 0) playerX -= PLAYER_SPEED; // Left
+            if (keysPressed[1] && playerX < WIDTH - 50) playerX += PLAYER_SPEED; // Right
+            if (keysPressed[2] && playerY > 0) playerY -= PLAYER_SPEED; // Up
+            if (keysPressed[3] && playerY < HEIGHT - 50) playerY += PLAYER_SPEED; // Down
+        }
+
+        // Spawn enemies in waves of 5
+        if (isEnemySpawning && enemies.isEmpty() && enemiesRemaining > 0) {
+            spawnEnemyWave();
+        }
 
         // Move enemies and make them shoot
-        for (Enemy enemy : enemies) {
+        Iterator<Enemy> enemyIterator = enemies.iterator();
+        while (enemyIterator.hasNext()) {
+            Enemy enemy = enemyIterator.next();
             double distanceToPlayer = Math.hypot(playerX - enemy.x, playerY - enemy.y);
             if (distanceToPlayer > ENEMY_STOP_DISTANCE) {
                 enemy.moveTowards(playerX, playerY, ENEMY_SPEED);
@@ -308,33 +555,44 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
                     double bulletSpeedY = BULLET_SPEED * Math.sin(angle);
                     enemyBullets.add(new Bullet(enemy.x + 25, enemy.y + 25, bulletSpeedX, bulletSpeedY, Color.YELLOW));
                     enemy.resetShootCooldown();
+                    playShootSound(); // Play the shooting sound
+                }
+            }
+
+            // Dodge bullets
+            for (Bullet bullet : playerBullets) {
+                double distanceToBullet = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+                if (distanceToBullet < 50) { // If bullet is close
+                    double angle = Math.atan2(bullet.y - enemy.y, bullet.x - enemy.x);
+                    enemy.x += 5 * Math.cos(angle + Math.PI / 2); // Move perpendicular to the bullet's trajectory
+                    enemy.y += 5 * Math.sin(angle + Math.PI / 2);
                 }
             }
         }
 
         // Move bullets
-        for (int i = playerBullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = playerBullets.get(i);
+        Iterator<Bullet> bulletIterator = playerBullets.iterator();
+        while (bulletIterator.hasNext()) {
+            Bullet bullet = bulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                playerBullets.remove(i);
+                bulletIterator.remove();
             }
         }
-        for (int i = enemyBullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = enemyBullets.get(i);
+        bulletIterator = enemyBullets.iterator();
+        while (bulletIterator.hasNext()) {
+            Bullet bullet = bulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                enemyBullets.remove(i);
+                bulletIterator.remove();
             }
         }
 
         // Check collisions
         checkCollisions();
 
-        // Check if current wave is cleared
-        if (enemies.isEmpty() && enemiesRemaining > 0) {
-            spawnEnemyWave();
-        }
+        // Check if the player is boxed in by enemies
+        checkIfPlayerIsBoxedIn();
 
         // Check level completion
         if (enemies.isEmpty() && enemiesRemaining == 0) {
@@ -342,43 +600,81 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         }
     }
 
+    private void checkIfPlayerIsBoxedIn() {
+        int boxedInThreshold = 4; // Number of enemies required to box in the player
+        int enemiesNearPlayer = 0;
+
+        for (Enemy enemy : enemies) {
+            double distance = Math.hypot(playerX - enemy.x, playerY - enemy.y);
+            if (distance <= ENEMY_STOP_DISTANCE) {
+                enemiesNearPlayer++;
+            }
+        }
+
+        if (enemiesNearPlayer >= boxedInThreshold) {
+            isPlayerBoxedIn = true;
+        } else {
+            isPlayerBoxedIn = false;
+        }
+    }
+
     private void checkCollisions() {
         // Player bullets hitting enemies
-        for (int i = playerBullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = playerBullets.get(i);
-            for (int j = enemies.size() - 1; j >= 0; j--) {
-                Enemy enemy = enemies.get(j);
+        Iterator<Bullet> bulletIterator = playerBullets.iterator();
+        while (bulletIterator.hasNext()) {
+            Bullet bullet = bulletIterator.next();
+            Iterator<Enemy> enemyIterator = enemies.iterator();
+            while (enemyIterator.hasNext()) {
+                Enemy enemy = enemyIterator.next();
                 if (bullet.x >= enemy.x && bullet.x <= enemy.x + 50 &&
                     bullet.y >= enemy.y && bullet.y <= enemy.y + 50) {
                     enemy.health--;
                     if (enemy.health <= 0) {
                         // Add death animation
                         animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10));
-                        enemies.remove(j);
+                        enemyIterator.remove();
                     }
-                    playerBullets.remove(i);
+                    bulletIterator.remove();
                     break;
                 }
             }
         }
 
         // Enemy bullets hitting player
-        for (int i = enemyBullets.size() - 1; i >= 0; i--) {
-            Bullet bullet = enemyBullets.get(i);
+        bulletIterator = enemyBullets.iterator();
+        while (bulletIterator.hasNext()) {
+            Bullet bullet = bulletIterator.next();
             if (bullet.x >= playerX && bullet.x <= playerX + 50 &&
                 bullet.y >= playerY && bullet.y <= playerY + 50) {
                 playerHealth--;
-                enemyBullets.remove(i);
+                bulletIterator.remove();
                 if (playerHealth <= 0) {
                     isGameRunning = false;
+                    restartLevel(); // Restart the current level on player death
                 }
                 break;
             }
         }
     }
 
+    private void restartLevel() {
+        playerX = WIDTH / 2 - 25; // Center player horizontally
+        playerY = HEIGHT / 2 - 25; // Center player vertically
+        playerHealth = PLAYER_HEALTH;
+        isGameRunning = true;
+        enemies.clear();
+        playerBullets.clear();
+        enemyBullets.clear();
+        animations.clear();
+        enemiesRemaining = TOTAL_ENEMIES;
+        showLevelCompleteBanner = false;
+
+        startLevel();
+        new Thread(this).start();
+    }
+
     private void showGameOverPopup() {
-        String[] options = {"Restart", "Quit"};
+        String[] options = {"Restart Level", "Quit"};
         int choice = JOptionPane.showOptionDialog(
             this,
             "Game Over!",
@@ -391,27 +687,10 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         );
 
         if (choice == 0) {
-            restartGame();
+            restartLevel(); // Restart the current level
         } else {
             System.exit(0);
         }
-    }
-
-    private void restartGame() {
-        playerX = WIDTH / 2;
-        playerY = HEIGHT - 100;
-        playerHealth = PLAYER_HEALTH;
-        isGameRunning = true;
-        enemies.clear();
-        playerBullets.clear();
-        enemyBullets.clear();
-        animations.clear();
-        currentLevel = 1;
-        enemiesRemaining = TOTAL_ENEMIES;
-        showLevelCompleteBanner = false;
-
-        spawnEnemyWave();
-        new Thread(this).start();
     }
 
     public static void main(String[] args) {
@@ -431,17 +710,54 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         private long lastShotTime;
         private static final long SHOOT_COOLDOWN = 1000; // 1 second cooldown
         private int level;
+        private String type;
+        private Color color;
+        private int speed; // Speed of the enemy
+        private String shape; // Shape of the enemy
+        private String era; // Era of the enemy
+        private boolean canShootFromAfar; // Flag to enable shooting from afar
 
-        Enemy(int x, int y, int health, int level) {
+        Enemy(int x, int y, int health, String type, Color color, int level, int speed, String shape, String era) {
             this.x = x;
             this.y = y;
             this.health = health;
             this.lastShotTime = System.currentTimeMillis();
             this.level = level;
+            this.type = type;
+            this.color = color;
+            this.speed = speed; // Set enemy speed based on level
+            this.shape = shape; // Set enemy shape
+            this.era = era; // Set enemy era
+            this.canShootFromAfar = false; // Default to not shooting from afar
+        }
+
+        void setCanShootFromAfar(boolean canShootFromAfar) {
+            this.canShootFromAfar = canShootFromAfar;
         }
 
         void moveTowards(int targetX, int targetY, int speed) {
             double angle = Math.atan2(targetY - y, targetX - x);
+            switch (era) {
+                case "Ancient":
+                    // Ancient enemies move more randomly
+                    angle += (Math.random() - 0.5) * 0.5;
+                    break;
+                case "Medieval":
+                    // Medieval enemies move in a straight line
+                    break;
+                case "WW1":
+                    // WW1 enemies move in a zigzag pattern
+                    angle += Math.sin(System.currentTimeMillis() / 500.0) * 0.5;
+                    break;
+                case "WW2":
+                    // WW2 enemies move in a straight line but faster
+                    speed *= 1.5;
+                    break;
+                case "Future":
+                    // Future enemies move in a circular pattern
+                    angle += Math.sin(System.currentTimeMillis() / 300.0) * 0.5;
+                    break;
+            }
             x += speed * Math.cos(angle);
             y += speed * Math.sin(angle);
         }
@@ -455,11 +771,23 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         }
 
         void draw(Graphics g) {
-            // Draw a ragged enemy shape
-            g.setColor(new Color(200, 50, 50)); // Dark red
-            int[] xPoints = {x + 10, x + 40, x + 50, x + 30, x + 20, x + 10};
-            int[] yPoints = {y + 10, y + 20, y + 50, y + 40, y + 30, y + 10};
-            g.fillPolygon(xPoints, yPoints, 6);
+            g.setColor(color);
+            switch (shape) {
+                case "circle":
+                    g.fillOval(x, y, 50, 50); // Draw enemy as a circle
+                    break;
+                case "rectangle":
+                    g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
+                    break;
+                case "triangle":
+                    int[] xPoints = {x + 25, x, x + 50};
+                    int[] yPoints = {y, y + 50, y + 50};
+                    g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
+                    break;
+                default:
+                    g.fillOval(x, y, 50, 50); // Default to circle
+                    break;
+            }
         }
     }
 
@@ -512,3 +840,29 @@ public class Gameenvironment extends JPanel implements KeyListener, Runnable, Mo
         }
     }
 }
+
+    class Animation {
+        int x, y, width, height, frames;
+        int currentFrame;
+
+        Animation(int x, int y, int width, int height, int frames) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+            this.frames = frames;
+            this.currentFrame = 0;
+        }
+
+        void draw(Graphics g) {
+            if (currentFrame < frames) {
+                g.setColor(new Color(255, 0, 0, 255 - (currentFrame * 25))); // Fading effect
+                g.fillOval(x + currentFrame * 2, y + currentFrame * 2, width - currentFrame * 4, height - currentFrame * 4);
+                currentFrame++;
+            }
+        }
+
+        boolean isFinished() {
+            return currentFrame >= frames;
+        }
+    }
