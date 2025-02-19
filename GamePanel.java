@@ -32,6 +32,7 @@ public class GamePanel extends JPanel implements Runnable {
         this.setFocusable(true);
 
         enemy = new Enemy(this, 500, player.worldY);
+        
         startGameThread(); 
     }
     private BufferedImage img;
@@ -57,6 +58,8 @@ public class GamePanel extends JPanel implements Runnable {
     public int cameraY = 0;
     public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
     public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
+    
+    
 
     // FPS
     int FPS = 60;
@@ -153,4 +156,10 @@ public class GamePanel extends JPanel implements Runnable {
         bufferGraphics.dispose();
         g2.dispose();
     }
+
+	public void restartGame() {
+		// TODO Auto-generated method stub
+        startGameThread();
+		
+	}
 }

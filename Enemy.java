@@ -30,7 +30,7 @@ public class Enemy extends Entity {
     private int knockbackSpeed = 4;
     private String knockbackDirection;
     private boolean isDead = false;  // True when enemy is dead
-    private int deathTimer = 60;  // Countdown before enemy disappears (1 second at 60 FPS)
+    private int deathTimer = 90;  // Countdown before enemy disappears (1 second at 60 FPS)
     private boolean flashing = false;  // True when flashing
     private int flashCounter = 0;  // Countdown timer
     private int flashDuration = 45;  // Flash for 45 frames (3 times for 15 frames each)
@@ -190,7 +190,7 @@ public class Enemy extends Entity {
             attacking = true;
             attackCounter = attackCooldown;  // Start cooldown
             gp.player.takeDamage(10, direction);  // Damage player once per attack
-            playAttackSound();  // Play attack sound
+            AudioPlayer.playSound("weak-enemy-hit.wav");   // Play attack sound
         }
 
         // Attack cooldown logic
@@ -257,7 +257,7 @@ public class Enemy extends Entity {
             } else {
                 image = (currentFrame == 0) ? right1 : rightIdle;
             }
-        }
+        } 
 
         // Ensure image is not null before drawing
         if (image != null) {
