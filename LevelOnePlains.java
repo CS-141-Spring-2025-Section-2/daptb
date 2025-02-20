@@ -28,7 +28,7 @@ public class LevelOnePlains extends JFrame {
         setVisible(true);
         gamePanel.startGameThread();  
 
-        AudioPlayer.playMusic("LevelOnePlainsTheme.wav");  // Play level music
+       
         
         }
 

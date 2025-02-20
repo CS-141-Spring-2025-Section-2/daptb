@@ -126,28 +126,6 @@ class EndScreenPanel extends JPanel {
         setFocusable(true);
         requestFocusInWindow();  // Ensure key listener works
     }
-    public EndScreenPanel(JFrame parentFrame) {
-        setLayout(new BorderLayout());
-
-        JLabel congratulations = new JLabel("Congratulations! You have defeated the Final Boss!", SwingConstants.CENTER);
-        congratulations.setFont(new Font("Arial", Font.BOLD, 36));
-        add(congratulations, BorderLayout.CENTER);
-
-        JButton mainMenuButton = new JButton("Return to Main Menu");
-        mainMenuButton.addActionListener(e -> {
-            AudioPlayer.stopMusic();  // Stop victory music
-            parentFrame.getContentPane().removeAll();
-            EndScreenPanel.start();            
-            parentFrame.revalidate();
-            parentFrame.repaint();
-        });
-
-        add(mainMenuButton, BorderLayout.SOUTH);
-
-        AudioPlayer.stopMusic();  // ✅ Stop any previous music
-        AudioPlayer.playSound("GameVictory!.wav");  // ✅ Plays only the End Screen music
-
-    }
 
     // ✅ Music methods
     private static void playMusic(String filepath) {

@@ -11,6 +11,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 
+// LEVEL 1
 public class GamePanel extends JPanel implements Runnable {
 	KeyHandler keyH;  
     Player player;  
@@ -24,7 +25,7 @@ public class GamePanel extends JPanel implements Runnable {
         //System.out.println("KeyHandler created: " + keyH);
 
        // System.out.println("KeyHandler instance in GamePanel: " + keyH);
-        this.player = new Player(this, keyH, 150, getGroundLevel() - tileSize);  // ✅ Pass the existing KeyHandler
+        this.player = new Player(this, keyH);  // 🔹 Pass KeyHandler to Player
         // System.out.println("Player created with KeyHandler: " + player.keyH);
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
@@ -37,31 +38,28 @@ public class GamePanel extends JPanel implements Runnable {
 
         enemy = new Enemy(this, 500, player.worldY);
         
+        AudioPlayer.playMusic("LevelOnePlainsTheme.wav");  // ✅ Plays level music
+        
         startGameThread(); 
     }
-    
-    public GamePanel(JFrame parentFrame, String levelMusic) {
-        this.parentFrame = parentFrame;
-        setPreferredSize(new Dimension(800, 600));
-        setFocusable(true);
+    // FINAL LEVEL
+    public GamePanel(JFrame parentFrame, String musicFile) {
+        this.parentFrame = parentFrame;  
+        this.keyH = new KeyHandler(this);  
+        this.addKeyListener(keyH);  
+        this.player = new Player(this, keyH);  
 
-        initializeLevel();  // ✅ Initialize player and enemy first
-        AudioPlayer.playMusic(levelMusic);  // ✅ Play music after setup
+        this.setPreferredSize(new Dimension(screenWidth, screenHeight));
+        this.setBackground(Color.CYAN);
+        this.setDoubleBuffered(true);
+        this.setFocusable(true);  
+        this.requestFocusInWindow();  
 
-        requestFocusInWindow();  // Focus for key inputs
-        startGameThread();      // ✅ Start game loop AFTER initialization
+        enemy = new Enemy(this, 500, player.worldY);  
+
+        AudioPlayer.playMusic(musicFile);  // ✅ Play custom music file
+        startGameThread();  
     }
-
-    
-    private void initializeLevel() {
-        KeyHandler keyHandler = new KeyHandler(this);  // ✅ Create key handler
-        this.addKeyListener(keyHandler);              // ✅ Attach it
-
-        player = new Player(this, keyHandler, 150, getGroundLevel() - tileSize);  // ✅ Initialize player
-        enemy = new Enemy(this, 400, player.worldY);                              // ✅ Initialize enemy with player reference
-    }
-
-
 
     private BufferedImage img;
 
@@ -87,8 +85,6 @@ public class GamePanel extends JPanel implements Runnable {
     public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
     public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
     private boolean isPaused = false;  // Tracks if the game is paused
-    private boolean endScreenShown = false;  // ✅ Prevents multiple end screen calls
-
 
     
 
@@ -128,20 +124,18 @@ public class GamePanel extends JPanel implements Runnable {
         isPaused = false;  // Clear pause flag
     }
     
-    public void showYouWinScreen(boolean isFinalLevel) {
-        AudioPlayer.stopMusic();  // Stop any existing music
-
-        if (isFinalLevel) {
-            showEndScreen();  // ✅ Show End Screen for final level
-        } else {
-            parentFrame.getContentPane().removeAll();  
-            parentFrame.add(new YouWinPanel(parentFrame, true));  // ✅ Show "LEVEL COMPLETE" for first level
-            parentFrame.revalidate();  
-            parentFrame.repaint();  
+    public void showYouWinScreen() {
+        if (parentFrame == null) {
+            System.err.println("Error: parentFrame is null.");
+            return;
         }
+
+        AudioPlayer.stopMusic();  // Stop current music
+        parentFrame.getContentPane().removeAll();  // Remove the game panel
+        parentFrame.add(new YouWinPanel(parentFrame));  // Show You Win screen
+        parentFrame.revalidate();  // Refresh window
+        parentFrame.repaint();  // Redraw window
     }
-
-
 
 
     @Override
@@ -180,34 +174,11 @@ public class GamePanel extends JPanel implements Runnable {
         player.update();
         if (enemy != null) {
         	enemy.update();
-        	
-        	// ✅ Check if enemy is defeated
-        	if (enemy != null && enemy.getCurrentHealth() <= 0 && !endScreenShown) {  
-        	    endScreenShown = true;  
-        	    showEndScreen();  
-        	}
-
-        }
-        
         }
         //System.out.println("CameraX: " + cameraX + " | CameraY: " + cameraY); // For debugging
-    public void showEndScreen() {
-        AudioPlayer.stopMusic();  // Stop level music
 
-        SwingUtilities.invokeLater(() -> {
-            if (parentFrame != null) {
-                parentFrame.getContentPane().removeAll();  // Clear existing content
-                parentFrame.add(new EndScreenPanel(parentFrame));  // ✅ NEW: Using constructor
-                parentFrame.revalidate();  // Refresh frame
-                parentFrame.repaint();  // Redraw
-            }
-        });
-    }
-
-    
-       
            
-    
+    }
     
     public void showGameOverScreen() {
         if (parentFrame == null) {
