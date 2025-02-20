@@ -71,14 +71,25 @@ public class Enemy extends Entity {
         isDead = true;  // Mark enemy as dead
         knockedBack = true;  // Apply knockback on death
         knockbackCounter = knockbackDuration;
-        System.out.println("Enemy has died!");
-        // ✅ Trigger win screen
-        Timer timer = new Timer(1000, e -> {  // 1-second delay before showing win screen
-            gp.showYouWinScreen();
+        
+        Timer timer = new Timer(1000, e -> {
+            if ("LevelOne".equals(gp.currentLevel)) {
+                gp.showYouWinScreen();  // 🏆 Show YouWinPanel (Level One)
+            } else if ("FinalLevel".equals(gp.currentLevel)) {
+            	AudioPlayer.stopMusic();
+            	new EndPanel();  // 🎬 Show EndPanel for Final Level
+            	gp.getParentFrame().dispose();  // 🚪 Close the final level window
+            }
         });
-        timer.setRepeats(false);  // Run only once
-        timer.start();
+        timer.setRepeats(false);  
+        timer.start();  
     }
+    
+    private void showEndCredits() {
+        System.out.println("Showing end credits...");  // 📝 Debug log
+        new EndPanel();  // 🎬 Show end credits panel
+    }
+
     
     public int getCurrentHealth() {
         return currentHealth;

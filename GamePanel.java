@@ -19,7 +19,7 @@ public class GamePanel extends JPanel implements Runnable {
 
     public GamePanel(JFrame parentFrame) {
         this.parentFrame = parentFrame;  // Store the parent frame
-
+        this.currentLevel = "LevelOne"; 
         this.keyH = new KeyHandler(this);  // 🔹 Initialize KeyHandler FIRST
         this.addKeyListener(keyH);  // 🔹 Attach KeyHandler to listen for inputs
         //System.out.println("KeyHandler created: " + keyH);
@@ -45,12 +45,13 @@ public class GamePanel extends JPanel implements Runnable {
     // FINAL LEVEL
     public GamePanel(JFrame parentFrame, String musicFile) {
         this.parentFrame = parentFrame;  
+        this.currentLevel = "FinalLevel";
         this.keyH = new KeyHandler(this);  
         this.addKeyListener(keyH);  
         this.player = new Player(this, keyH);  
 
         this.setPreferredSize(new Dimension(screenWidth, screenHeight));
-        this.setBackground(Color.CYAN);
+        this.setBackground(Color.BLACK);
         this.setDoubleBuffered(true);
         this.setFocusable(true);  
         this.requestFocusInWindow();  
@@ -60,6 +61,11 @@ public class GamePanel extends JPanel implements Runnable {
         AudioPlayer.playMusic(musicFile);  // ✅ Play custom music file
         startGameThread();  
     }
+    
+    public JFrame getParentFrame() {
+        return parentFrame;  // ✅ Provides controlled access to the parent frame
+    }
+
 
     private BufferedImage img;
 
@@ -85,6 +91,7 @@ public class GamePanel extends JPanel implements Runnable {
     public final int cameraOffsetX = screenWidth / 2 - tileSize / 2; // Center knight horizontally
     public final int cameraOffsetY = screenHeight / 2 - tileSize / 2; // Center knight vertically
     private boolean isPaused = false;  // Tracks if the game is paused
+    public String currentLevel;  // 🔑 Tracks the current level (LevelOne or FinalLevel)
 
     
 

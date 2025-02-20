@@ -157,21 +157,21 @@ public class Player extends Entity {
     public void getPlayerImage() {
         try {
             // Jump images
-            jumpRight = ImageIO.read(getClass().getResourceAsStream("/player/knight-jumping-right-pixilart.png"));
-            jumpLeft  = ImageIO.read(getClass().getResourceAsStream("/player/knight-jumping-left-pixilart.png"));
+            jumpRight = ImageIO.read(getClass().getResourceAsStream("knight-jumping-right-pixilart.png"));
+            jumpLeft  = ImageIO.read(getClass().getResourceAsStream("knight-jumping-left-pixilart.png"));
 
             // Running and idle images
-            right1    = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-right-pixilart-2.png"));
-            rightIdle = ImageIO.read(getClass().getResourceAsStream("/player/knight-facing-right.png"));
-            left1     = ImageIO.read(getClass().getResourceAsStream("/player/knight-moving-left-pixilart.png"));
-            leftIdle  = ImageIO.read(getClass().getResourceAsStream("/player/knight-facing-left.png"));
+            right1    = ImageIO.read(getClass().getResourceAsStream("knight-moving-right-pixilart-2.png"));
+            rightIdle = ImageIO.read(getClass().getResourceAsStream("knight-facing-right.png"));
+            left1     = ImageIO.read(getClass().getResourceAsStream("knight-moving-left-pixilart.png"));
+            leftIdle  = ImageIO.read(getClass().getResourceAsStream("knight-facing-left.png"));
 
             // Attack images for punching (key "I")
-            attackRight = ImageIO.read(getClass().getResource("/player/knight-punch-right.png"));
-            attackLeft  = ImageIO.read(getClass().getResource("/player/knight-punch-left.png"));
+            attackRight = ImageIO.read(getClass().getResource("knight-punch-right.png"));
+            attackLeft  = ImageIO.read(getClass().getResource("knight-punch-left.png"));
             // Attack images for kicking (key "O")
-            attackRight2 = ImageIO.read(getClass().getResource("/player/knight-kick-right.png"));
-            attackLeft2  = ImageIO.read(getClass().getResource("/player/knight-kick-left.png"));
+            attackRight2 = ImageIO.read(getClass().getResource("knight-kick-right.png"));
+            attackLeft2  = ImageIO.read(getClass().getResource("knight-kick-left.png"));
         } catch (IOException e) {
             e.printStackTrace();
         }

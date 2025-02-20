@@ -48,22 +48,21 @@ public class LevelOnePlains extends JFrame {
    
     public static void playMusic(String filepath) {
         try {
-            URL soundURL = LevelOnePlains.class.getResource("/sounds/LevelOnePlainsTheme.wav"); // Load from resources
-            System.out.println("Trying to load sound from: " + soundURL); // Print the URL for debugging
+            URL soundURL = LevelOnePlains.class.getResource("LevelOnePlainsTheme.wav");  // ✅ Use leading slash
+            System.out.println("Trying to load sound from: " + soundURL);  // Debug URL
 
             if (soundURL == null) {
-                System.err.println("Sound file not found in resources: " + filepath);
-                return; // Exit early if the URL is null
+                System.err.println("❌ Sound file not found in resources: " + filepath);
+                return;  // Exit early if not found
             }
 
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundURL); // Use the URL
-            Clip clip = AudioSystem.getClip(); 
-            clip = AudioSystem.getClip();
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(soundURL);  
+            Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
             clip.start();
-            clip.loop(Clip.LOOP_CONTINUOUSLY);
+            clip.loop(Clip.LOOP_CONTINUOUSLY);  // 🔁 Loop music
 
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

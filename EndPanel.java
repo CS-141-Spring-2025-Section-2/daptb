@@ -1,145 +1,131 @@
 package daptb;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.*;
-import java.awt.event.ComponentEvent;
-import java.awt.event.ComponentAdapter;
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
-
-
 import javax.sound.sampled.*;
-
-import java.io.File;
-import java.io.IOException;
-
+import java.io.InputStream;
 import javax.imageio.ImageIO;
 
+public class EndPanel extends JFrame {
 
-public class EndPanel {
+    public EndPanel() {
+        setTitle("Game Completed");
+        setExtendedState(JFrame.MAXIMIZED_BOTH);  
+        setUndecorated(true);  
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  
+        setLocationRelativeTo(null);  
 
-	public static void main(String[] args) {
-		// TODO Auto-generated method stub
+        add(new EndScreenPanel(this, true));  
+        setVisible(true);  
+    }
 
-		EndScreenPanel.start(); //Invoke endScreen method in main method
-	}
-
+    public static void main(String[] args) {
+        new EndPanel();  
+    }
 }
 
-
 class EndScreenPanel extends JPanel {
-	public static void start() {
-		
-	}
-    private static Clip clip; // Store clip as a static variable
+    private static Clip clip;  
+    private Image backgroundImage;  
 
     public EndScreenPanel(JFrame parentFrame, boolean playEndMusic) {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(1100, 840)); // Set size for consistent display
+        loadBackgroundImage("game-end-screen.jpg");  
 
-        // ✅ Play end screen music if the flag is true
         if (playEndMusic) {
-            stopMusic();  // Stop any existing music first
-            playMusic("src/daptb/GameVictory!.wav");
+            stopMusic();  
+            playMusic("game-victory.wav");  
         }
 
-        JLayeredPane layeredPane = new JLayeredPane();
-        layeredPane.setPreferredSize(getPreferredSize());
-
-        // ✅ Add background image
-        backgroundPanel endscreen = new backgroundPanel("src/daptb/2D Game End Screen.jpg");
-        endscreen.setBounds(0, 0, getWidth(), getHeight());
-        layeredPane.add(endscreen, JLayeredPane.DEFAULT_LAYER);
-
-        // ✅ Text Panel
-        JPanel textPanel = new JPanel(new GridBagLayout());
-        textPanel.setOpaque(false);
-        textPanel.setBounds(0, 0, getWidth(), getHeight());
-
-        // ✅ Create End Screen text
-        JLabel text = new JLabel("Congratulations! You have defeated the Final Boss and beat the game!!!", SwingConstants.CENTER);
-        JLabel text2 = new JLabel("Thank you for playing!", SwingConstants.CENTER);
-        JLabel text3 = new JLabel("Credits:", SwingConstants.CENTER);
-        JLabel text4 = new JLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", SwingConstants.CENTER);
-        JLabel text5 = new JLabel("Press 'Esc' to return to the Main Menu.", SwingConstants.CENTER);
-        JLabel text6 = new JLabel("Press Delete on Mac/Backspace on Windows to exit.", SwingConstants.CENTER);
-
-        // ✅ Set text attributes
         Font textFont = new Font("Times New Roman", Font.BOLD, 33);
+
+        // ✅ Create centered paragraph labels using HTML
+        JLabel text = createCenteredLabel("Congratulations! You have defeated the Final Boss and beat the game!!!", textFont, Color.WHITE);
+        JLabel text2 = createCenteredLabel("Thank you for playing!", textFont, Color.WHITE);
+        JLabel text3 = createCenteredLabel("Credits:", textFont, Color.GRAY);
+        JLabel text4 = createCenteredLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", textFont, Color.GRAY);
+        JLabel text5 = createCenteredLabel("Press 'Esc' to return to the Main Menu.", textFont, Color.GREEN);
+        JLabel text6 = createCenteredLabel("Press Delete on Mac/Backspace on Windows to exit.", textFont, Color.RED);
+
+        // ✅ Panel to hold text vertically
+        JPanel textContainer = new JPanel();
+        textContainer.setOpaque(false);  
+        textContainer.setLayout(new BoxLayout(textContainer, BoxLayout.Y_AXIS));
+        textContainer.add(Box.createVerticalGlue());
         for (JLabel label : new JLabel[]{text, text2, text3, text4, text5, text6}) {
-            label.setFont(textFont);
-            label.setAlignmentX(Component.CENTER_ALIGNMENT);
+            textContainer.add(label);
+            textContainer.add(Box.createRigidArea(new Dimension(0, 15)));  
         }
+        textContainer.add(Box.createVerticalGlue());
 
-        text.setForeground(Color.WHITE);
-        text2.setForeground(Color.WHITE);
-        text3.setForeground(Color.GRAY);
-        text4.setForeground(Color.GRAY);
-        text5.setForeground(Color.GREEN);
-        text6.setForeground(Color.RED);
+        // ✅ Center textContainer
+        JPanel centerPanel = new JPanel(new GridBagLayout());
+        centerPanel.setOpaque(false);  
+        centerPanel.add(textContainer, new GridBagConstraints());  
 
-        // ✅ Arrange text vertically
-        JPanel panel = new JPanel();
-        panel.setOpaque(false);
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.add(Box.createVerticalGlue());
-        panel.add(text);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(text2);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(text3);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(text4);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(text5);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
-        panel.add(text6);
-        panel.add(Box.createVerticalGlue());
+        add(centerPanel, BorderLayout.CENTER);  
 
-        textPanel.add(panel, new GridBagConstraints());
-        layeredPane.add(textPanel, JLayeredPane.PALETTE_LAYER);
-
-        // ✅ Add layered pane to this panel
-        add(layeredPane, BorderLayout.CENTER);
-
-        // ✅ Add key listener to handle 'Esc' and 'Backspace'
+        // ✅ Key listener for navigation
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
-                if (clip != null && clip.isRunning()) {
-                    clip.stop(); // Stop the end screen music
-                }
+                if (clip != null && clip.isRunning()) clip.stop();  
 
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    parentFrame.getContentPane().removeAll();
-                    EndScreenPanel.start();  // ✅ Uses existing static method, no constructor needed
-                    parentFrame.revalidate();
-                    parentFrame.repaint();
+                    parentFrame.dispose();  
+                    new GameClass();  
                 } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                    parentFrame.dispose();  // Exit the game
-                    System.exit(0);
+                    parentFrame.dispose();  
+                    System.exit(0);  
                 }
             }
         });
 
         setFocusable(true);
-        requestFocusInWindow();  // Ensure key listener works
+        requestFocusInWindow();  
     }
 
-    // ✅ Music methods
-    private static void playMusic(String filepath) {
-        try {
-            File musicFile = new File(filepath);
-            if (musicFile.exists()) {
-                AudioInputStream audioStream = AudioSystem.getAudioInputStream(musicFile);
-                clip = AudioSystem.getClip();
-                clip.open(audioStream);
-                clip.start();
-                clip.loop(Clip.LOOP_CONTINUOUSLY);
-            } else {
-                System.out.println("Music file not found!");
+    // ✅ Helper method to create centered JLabel with HTML for text alignment
+    private JLabel createCenteredLabel(String text, Font font, Color color) {
+        JLabel label = new JLabel("<html><div style='text-align: center;'>" + text + "</div></html>", SwingConstants.CENTER);
+        label.setFont(font);
+        label.setForeground(color);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);  
+        return label;
+    }
+
+    private void loadBackgroundImage(String filepath) {
+        try (InputStream is = getClass().getResourceAsStream(filepath)) {
+            if (is == null) {
+                System.out.println("Error: Background image not found at path: " + filepath);
+                return;
             }
+            backgroundImage = ImageIO.read(is);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (backgroundImage != null) {
+            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);  
+        }
+    }
+
+    private static void playMusic(String filepath) {
+        try (InputStream is = EndScreenPanel.class.getResourceAsStream(filepath)) {
+            if (is == null) {
+                System.out.println("Error: Sound file not found at: " + filepath);
+                return;
+            }
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(is);
+            clip = AudioSystem.getClip();
+            clip.open(audioStream);
+            clip.start();
+            clip.loop(Clip.LOOP_CONTINUOUSLY);  
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -152,35 +138,3 @@ class EndScreenPanel extends JPanel {
         }
     }
 }
-
-
-
-
-class backgroundPanel extends JPanel {
-	private Image backgroundImage;
-	
-	public backgroundPanel(String filepath) {
-		try {
-			backgroundImage = ImageIO.read(new File(filepath));
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.out.println("Error: Background image not found!");
-		}
-	}
-	
-	@Override
-	protected void paintComponent (Graphics g) {
-		super.paintComponent(g);
-		if (backgroundImage != null) {
-			g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-			
-			//Dims background so text is more visible
-			g.setColor(new Color(0, 0, 0, 150));
-			g.fillRect(0, 0, getWidth(), getHeight());
-		}
-	}
-}
-
-	
-
-		
