@@ -35,7 +35,7 @@ class EndScreenPanel extends JPanel {
 
         if (playEndMusic) {
             stopMusic();  
-            playMusic("game-victory.wav");  
+            playMusic("game-end.wav");  
         }
 
         Font textFont = new Font("Times New Roman", Font.BOLD, 33);
