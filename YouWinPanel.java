@@ -8,12 +8,15 @@ import java.awt.event.ActionListener;
 public class YouWinPanel extends JPanel {
     private JFrame parentFrame;
 
-    public YouWinPanel(JFrame parentFrame) {
-        AudioPlayer.stopMusic();  // Stop any existing music
-        AudioPlayer.playSound("level-victory-2.wav");  // Play win sound (place `you-win.wav` in /sounds/)
-
+    public YouWinPanel(JFrame parentFrame, boolean playVictoryMusic) {
+  
         this.parentFrame = parentFrame;
         setLayout(new BorderLayout());
+        
+        if (playVictoryMusic) {
+        	AudioPlayer.stopMusic();  // ✅ Ensure previous music stops
+            AudioPlayer.playSound("level-victory-2.wav");  // ✅ Only play if flag is true
+        }
 
         JLabel winLabel = new JLabel("LEVEL COMPLETE!", SwingConstants.CENTER);
         winLabel.setFont(new Font("Arial", Font.BOLD, 50));
@@ -25,10 +28,9 @@ public class YouWinPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 parentFrame.getContentPane().removeAll();
-                parentFrame.add(new FinalLevelVolcanoCastlePanel(parentFrame));  // Create next level panel
                 parentFrame.revalidate();
                 parentFrame.repaint();
-                AudioPlayer.playMusic("FinalLevelVolcanoCastleTheme.wav");  // Play final level music
+                AudioPlayer.playMusic("final-level-volcano-castle.wav");  // Play final level music
             }
         });
 

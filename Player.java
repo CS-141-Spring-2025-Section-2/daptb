@@ -33,6 +33,23 @@ public class Player extends Entity {
         setDefaultValues();
         getPlayerImage();
     }
+    
+    public Player(GamePanel gp, KeyHandler keyH, int startX, int startY) {
+        this.gp = gp;
+        this.keyH = keyH;  // ✅ Use the passed KeyHandler instead of creating a new one
+
+        this.worldX = startX;  
+        this.worldY = startY;  
+
+        this.screenX = gp.screenWidth / 2 - (gp.tileSize / 2);  
+        this.screenY = gp.screenHeight / 2 - (gp.tileSize / 2);  
+
+        setDefaultValues();  
+        getPlayerImage();  
+    }
+
+
+
 
     public final int screenX; 
     public final int screenY;

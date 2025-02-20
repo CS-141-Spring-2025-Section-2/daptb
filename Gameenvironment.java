@@ -1,6 +1,7 @@
-package sem1;
+package daptb;
 
 import javax.sound.sampled.*;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -9,6 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
+
+
 
 public class Gameenvironment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
     private int WIDTH;  // Dynamic width
