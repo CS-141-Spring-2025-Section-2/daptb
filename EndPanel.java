@@ -41,10 +41,10 @@ class EndScreenPanel extends JPanel {
         Font textFont = new Font("Times New Roman", Font.BOLD, 33);
 
         // ✅ Create centered paragraph labels using HTML
-        JLabel text = createCenteredLabel("Congratulations! You have defeated the Final Boss and beat the game!!!", textFont, Color.WHITE);
+        JLabel text = createCenteredLabel("Congratulations! You have defeated the Final Boss and beat the game!", textFont, Color.WHITE);
         JLabel text2 = createCenteredLabel("Thank you for playing!", textFont, Color.WHITE);
         JLabel text3 = createCenteredLabel("Credits:", textFont, Color.GRAY);
-        JLabel text4 = createCenteredLabel("Dayspring, Abdul, Phillip, Tepiwa, Benjamin: D.A.P.T.B.", textFont, Color.GRAY);
+        JLabel text4 = createCenteredLabel("Character: Dayspring, Title: Abdul, Level/Sprites: Phillip, Design: Tepiwa, Enemies: Benjamin D.A.P.T.B.", textFont, Color.GRAY);
         JLabel text5 = createCenteredLabel("Press 'Esc' to return to the Main Menu.", textFont, Color.GREEN);
         JLabel text6 = createCenteredLabel("Press Delete on Mac/Backspace on Windows to exit.", textFont, Color.RED);
 
