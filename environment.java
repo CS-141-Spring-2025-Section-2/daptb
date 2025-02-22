@@ -11,6 +11,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Random;
+
 public class environment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
     private int WIDTH;  // Dynamic width
     private int HEIGHT; // Dynamic height
