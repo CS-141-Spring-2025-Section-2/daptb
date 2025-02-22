@@ -1,32 +1,24 @@
 package daptb;
 
 import javax.sound.sampled.*;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
-<<<<<<< HEAD:Gameenvironment.java
-
-
-public class Gameenvironment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
-=======
 public class environment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
->>>>>>> be03f3165f879afbda176f051df5981e85056323:environment.java
     private int WIDTH;  // Dynamic width
     private int HEIGHT; // Dynamic height
     private static final int PLAYER_SPEED = 5;
     private static final int BULLET_SPEED = 10;
-    private static final int PLAYER_HEALTH = 50;
+    private static final int PLAYER_HEALTH = 60;
     private static final int ENEMY_HEALTH = 5;
-    private static final int ENEMIES_PER_WAVE = 5;
-    private static final int TOTAL_ENEMIES = 20;
-    private static final int ENEMY_SHOOT_DISTANCE = 300; // Increased shooting distance
+    private static final int ENEMIES_PER_WAVE = 10;
+    private static final int TOTAL_ENEMIES = 25;
+    private static final int ENEMY_SHOOT_DISTANCE = 400; // Increased shooting distance
     private static final int ENEMY_SPEED = 2;
     private static final int ENEMY_STOP_DISTANCE = 100; // Distance at which enemies stop moving
     private static final int BOMB_RANGE = 200; // Range of the bomb
@@ -90,7 +82,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         isPlayerBoxedIn = false;
 
         // Ask for player's name
-        playerName = JOptionPane.showInputDialog(this, "Enter your name:", JOptionPane.PLAIN_MESSAGE);
+        playerName = JOptionPane.showInputDialog(this, "Enter your name:");
         if (playerName == null || playerName.trim().isEmpty()) {
             playerName = "Player"; // Default name
         }
@@ -188,7 +180,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
             // Set volume to 50% to ensure it's not too loud
             FloatControl gainControl = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
-            gainControl.setValue(-3.0f); // Reduce volume by 10 decibels
+            gainControl.setValue(-3.0f); // Reduce volume by 3 decibels
 
             backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY); // Loop the background music
             backgroundMusic.start(); // Start playing the background music
@@ -214,10 +206,14 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     private void spawnEnemyWave() {
         Random random = new Random();
+        String era = getEraForLevel(currentLevel);
+        int formationRows = 2; // Number of rows in the formation
+        int formationCols = ENEMIES_PER_WAVE / formationRows; // Number of columns in the formation
+
         for (int i = 0; i < ENEMIES_PER_WAVE && enemiesRemaining > 0; i++) {
-            int enemyX = random.nextInt(WIDTH - 50);
-            int enemyY = random.nextInt(HEIGHT / 2);
-            String era = getEraForLevel(currentLevel);
+            int enemyX = WIDTH / 2 - (formationCols * 50) / 2 + (i % formationCols) * 50;
+            int enemyY = 50 + (i / formationCols) * 50;
+
             Enemy enemy = createEnemy(enemyX, enemyY, ENEMY_HEALTH, currentLevel, era);
 
             // Enable shooting from afar starting from level 2
@@ -499,8 +495,19 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                     loadBackgroundImage(); // Load new background for the next level
                     startLevel();
                 } else {
-                    JOptionPane.showMessageDialog(this, "Congratulations! You have completed the game!", "Game Over", JOptionPane.INFORMATION_MESSAGE);
-                    System.exit(0);
+                    // Player has completed the final level
+                    // Transition to the EndPanel
+                    JFrame endFrame = new JFrame("Game Over");
+                    EndScreenPanel endPanel = new EndScreenPanel(endFrame, true); // Pass the JFrame and playEndMusic flag
+                    endFrame.add(endPanel); // Add the EndPanel to the JFrame
+                    endFrame.pack(); // Resize the JFrame to fit the EndPanel
+                    endFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Close the application when the window is closed
+                    endFrame.setLocationRelativeTo(null); // Center the window on the screen
+                    endFrame.setVisible(true); // Show the EndPanel
+
+                    // Close the current game window
+                    JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
+                    frame.dispose();
                 }
             }
 
@@ -568,6 +575,12 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 }
             }
 
+            // Avoid collisions with other enemies
+            enemy.avoidCollisions(enemies);
+
+            // Maintain distance between enemies
+            enemy.maintainDistance(enemies);
+
             // Dodge bullets
             for (Bullet bullet : playerBullets) {
                 double distanceToBullet = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
@@ -610,7 +623,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     }
 
     private void checkIfPlayerIsBoxedIn() {
-        int boxedInThreshold = 4; // Number of enemies required to box in the player
+        int boxedInThreshold = 5; // Number of enemies required to box in the player
         int enemiesNearPlayer = 0;
 
         for (Enemy enemy : enemies) {
@@ -628,40 +641,41 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     }
 
     private void checkCollisions() {
+        // Create a copy of the playerBullets list to avoid concurrent modification
+        ArrayList<Bullet> playerBulletsCopy = new ArrayList<>(playerBullets);
+        ArrayList<Enemy> enemiesCopy = new ArrayList<>(enemies);
+
         // Player bullets hitting enemies
-        Iterator<Bullet> bulletIterator = playerBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
-            Iterator<Enemy> enemyIterator = enemies.iterator();
-            while (enemyIterator.hasNext()) {
-                Enemy enemy = enemyIterator.next();
+        for (Bullet bullet : playerBulletsCopy) {
+            for (Enemy enemy : enemiesCopy) {
                 if (bullet.x >= enemy.x && bullet.x <= enemy.x + 50 &&
                     bullet.y >= enemy.y && bullet.y <= enemy.y + 50) {
                     enemy.health--;
                     if (enemy.health <= 0) {
                         // Add death animation
                         animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10));
-                        enemyIterator.remove();
+                        enemies.remove(enemy); // Remove the enemy from the original list
                     }
-                    bulletIterator.remove();
-                    break;
+                    playerBullets.remove(bullet); // Remove the bullet from the original list
+                    break; // Exit the inner loop after handling the collision
                 }
             }
         }
 
+        // Create a copy of the enemyBullets list to avoid concurrent modification
+        ArrayList<Bullet> enemyBulletsCopy = new ArrayList<>(enemyBullets);
+
         // Enemy bullets hitting player
-        bulletIterator = enemyBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
+        for (Bullet bullet : enemyBulletsCopy) {
             if (bullet.x >= playerX && bullet.x <= playerX + 50 &&
                 bullet.y >= playerY && bullet.y <= playerY + 50) {
                 playerHealth--;
-                bulletIterator.remove();
+                enemyBullets.remove(bullet); // Remove the bullet from the original list
                 if (playerHealth <= 0) {
                     isGameRunning = false;
                     restartLevel(); // Restart the current level on player death
                 }
-                break;
+                break; // Exit the loop after handling the collision
             }
         }
     }
@@ -677,6 +691,11 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         animations.clear();
         enemiesRemaining = TOTAL_ENEMIES;
         showLevelCompleteBanner = false;
+
+        // Reset enemy speed to default
+        for (Enemy enemy : enemies) {
+            enemy.resetSpeed(); // Add this method to the Enemy class
+        }
 
         startLevel();
         new Thread(this).start();
@@ -700,6 +719,11 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         } else {
             System.exit(0);
         }
+    }
+
+    private int calculateFinalScore() {
+        // Example calculation, you can adjust this based on your game's scoring system
+        return (currentLevel * 1000) + (playerHealth * 10);
     }
 
     public static void main(String[] args) {
@@ -744,6 +768,30 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             this.canShootFromAfar = canShootFromAfar;
         }
 
+        void resetSpeed() {
+            // Reset speed to default based on level
+            switch (level) {
+                case 1:
+                    speed = 2;
+                    break;
+                case 2:
+                    speed = 3;
+                    break;
+                case 3:
+                    speed = 4;
+                    break;
+                case 4:
+                    speed = 5;
+                    break;
+                case 5:
+                    speed = 6;
+                    break;
+                default:
+                    speed = 2; // Default speed
+                    break;
+            }
+        }
+
         void moveTowards(int targetX, int targetY, int speed) {
             double angle = Math.atan2(targetY - y, targetX - x);
             switch (era) {
@@ -769,6 +817,36 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             }
             x += speed * Math.cos(angle);
             y += speed * Math.sin(angle);
+        }
+
+        void avoidCollisions(ArrayList<Enemy> enemies) {
+            double minDistance = 50; // Minimum distance between enemies
+            for (Enemy other : enemies) {
+                if (other != this) {
+                    double distance = Math.hypot(x - other.x, y - other.y);
+                    if (distance < minDistance) {
+                        // Move away from the other enemy
+                        double angle = Math.atan2(y - other.y, x - other.x);
+                        x += (minDistance - distance) * Math.cos(angle);
+                        y += (minDistance - distance) * Math.sin(angle);
+                    }
+                }
+            }
+        }
+
+        void maintainDistance(ArrayList<Enemy> enemies) {
+            double minDistance = 60; // Minimum distance between enemies
+            for (Enemy other : enemies) {
+                if (other != this) {
+                    double distance = Math.hypot(x - other.x, y - other.y);
+                    if (distance < minDistance) {
+                        // Move away from the other enemy
+                        double angle = Math.atan2(y - other.y, x - other.x);
+                        x += (minDistance - distance) * Math.cos(angle);
+                        y += (minDistance - distance) * Math.sin(angle);
+                    }
+                }
+            }
         }
 
         boolean canShoot() {
@@ -849,29 +927,3 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 }
-
-    class Animation {
-        int x, y, width, height, frames;
-        int currentFrame;
-
-        Animation(int x, int y, int width, int height, int frames) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-            this.frames = frames;
-            this.currentFrame = 0;
-        }
-
-        void draw(Graphics g) {
-            if (currentFrame < frames) {
-                g.setColor(new Color(255, 0, 0, 255 - (currentFrame * 25))); // Fading effect
-                g.fillOval(x + currentFrame * 2, y + currentFrame * 2, width - currentFrame * 4, height - currentFrame * 4);
-                currentFrame++;
-            }
-        }
-
-        boolean isFinished() {
-            return currentFrame >= frames;
-        }
-    }
