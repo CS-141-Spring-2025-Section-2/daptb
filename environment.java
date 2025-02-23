@@ -11,10 +11,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Random;
-
 public class environment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
     private int WIDTH;  // Dynamic width
     private int HEIGHT; // Dynamic height
@@ -54,7 +50,13 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     private int bombUsesRemaining; // Number of bomb uses remaining
     private boolean isPlayerBoxedIn; // Flag to check if the player is boxed in by enemies
 
-    public environment() {
+    private String selectedCharacter; // Selected character from the character selection screen
+    private Image playerSpriteLeft, playerSpriteRight; // Sprites for the selected character
+
+    public environment(String selectedCharacter) {
+        this.selectedCharacter = selectedCharacter;
+        loadPlayerSprites();
+
         // Initialize dynamic width and height
         WIDTH = 800;
         HEIGHT = 600;
@@ -87,17 +89,20 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         bombUsesRemaining = BOMB_COOLDOWN;
         isPlayerBoxedIn = false;
 
-        // Ask for player's name
-        playerName = JOptionPane.showInputDialog(this, "Enter your name:");
-        if (playerName == null || playerName.trim().isEmpty()) {
-            playerName = "Player"; // Default name
-        }
+        // Default player name
+        playerName = "Player";
 
         loadCustomFont();
         loadBackgroundImage(); // Load background for the current level
         loadShootSound(); // Load the shooting sound
         loadBackgroundMusic(); // Load background music
         startLevel();
+    }
+
+    private void loadPlayerSprites() {
+        // Load the left and right sprites for the selected character
+        playerSpriteLeft = new ImageIcon(getClass().getResource("/characters/" + selectedCharacter + "/" + selectedCharacter + "-ship-left.png")).getImage();
+        playerSpriteRight = new ImageIcon(getClass().getResource("/characters/" + selectedCharacter + "/" + selectedCharacter + "-ship-right.png")).getImage();
     }
 
     @Override
@@ -368,16 +373,21 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     private void drawPlayer(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
 
-        // Draw player as a circle with a line indicating direction
-        g2d.setColor(Color.BLUE);
-        g2d.fillOval(playerX, playerY, 50, 50); // Player body
+        // Draw the selected character's sprite
+        if (keysPressed[1]) { // Right key pressed
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
+        } else if (keysPressed[0]) { // Left key pressed
+            g2d.drawImage(playerSpriteLeft, playerX, playerY, 50, 50, null);
+        } else {
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null); // Default to right sprite
+        }
 
-        // Draw a larger red line indicating the direction the player is facing
-        int lineX = playerX + 25 + (int) (50 * Math.cos(playerAngle)); // Increased length
-        int lineY = playerY + 25 + (int) (50 * Math.sin(playerAngle)); // Increased length
+        // Draw the gun extension
+        int gunX = playerX + 25 + (int) (50 * Math.cos(playerAngle)); // Increased length
+        int gunY = playerY + 25 + (int) (50 * Math.sin(playerAngle)); // Increased length
         g2d.setColor(Color.RED); // Changed to red
         g2d.setStroke(new BasicStroke(3)); // Thicker line
-        g2d.drawLine(playerX + 25, playerY + 25, lineX, lineY);
+        g2d.drawLine(playerX + 25, playerY + 25, gunX, gunY);
     }
 
     private void drawHealthBar(Graphics g) {
@@ -502,6 +512,16 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                     startLevel();
                 } else {
                     // Player has completed the final level
+                    // Stop the shooting sound
+                    if (shootSound != null && shootSound.isRunning()) {
+                        shootSound.stop();
+                    }
+
+                    // Stop the background music
+                    if (backgroundMusic != null && backgroundMusic.isRunning()) {
+                        backgroundMusic.stop();
+                    }
+
                     // Transition to the EndPanel
                     JFrame endFrame = new JFrame("Game Over");
                     EndScreenPanel endPanel = new EndScreenPanel(endFrame, true); // Pass the JFrame and playEndMusic flag
@@ -602,17 +622,21 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         Iterator<Bullet> bulletIterator = playerBullets.iterator();
         while (bulletIterator.hasNext()) {
             Bullet bullet = bulletIterator.next();
-            bullet.move();
-            if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                bulletIterator.remove();
+            if (bullet != null) { // Ensure bullet is not null
+                bullet.move();
+                if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
+                    bulletIterator.remove();
+                }
             }
         }
         bulletIterator = enemyBullets.iterator();
         while (bulletIterator.hasNext()) {
             Bullet bullet = bulletIterator.next();
-            bullet.move();
-            if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                bulletIterator.remove();
+            if (bullet != null) { // Ensure bullet is not null
+                bullet.move();
+                if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
+                    bulletIterator.remove();
+                }
             }
         }
 
@@ -653,6 +677,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
         // Player bullets hitting enemies
         for (Bullet bullet : playerBulletsCopy) {
+            if (bullet == null) continue; // Skip if bullet is null
             for (Enemy enemy : enemiesCopy) {
                 if (bullet.x >= enemy.x && bullet.x <= enemy.x + 50 &&
                     bullet.y >= enemy.y && bullet.y <= enemy.y + 50) {
@@ -673,6 +698,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
         // Enemy bullets hitting player
         for (Bullet bullet : enemyBulletsCopy) {
+            if (bullet == null) continue; // Skip if bullet is null
             if (bullet.x >= playerX && bullet.x <= playerX + 50 &&
                 bullet.y >= playerY && bullet.y <= playerY + 50) {
                 playerHealth--;
@@ -734,7 +760,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Game Environment");
-        environment game = new environment();
+        environment game = new environment("Assassin"); // Default character for testing
         frame.add(game);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -747,7 +773,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     class Enemy {
         int x, y, health;
         private long lastShotTime;
-        private static final long SHOOT_COOLDOWN = 1000; // 1 second cooldown
+        private static final long SHOOT_COOLDOWN = 500; // Reduced cooldown for faster shooting
         private int level;
         private String type;
         private Color color;
@@ -933,3 +959,4 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 }
+
