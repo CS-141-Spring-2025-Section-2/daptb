@@ -6,7 +6,9 @@ import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
@@ -55,7 +57,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     public environment(String selectedCharacter) {
         this.selectedCharacter = selectedCharacter;
-        loadPlayerSprites();
+        loadSprites();
 
         // Initialize dynamic width and height
         WIDTH = 800;
@@ -99,10 +101,68 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         startLevel();
     }
 
-    private void loadPlayerSprites() {
-        // Load the left and right sprites for the selected character
-        playerSpriteLeft = new ImageIcon(getClass().getResource("/characters/" + selectedCharacter + "/" + selectedCharacter + "-ship-left.png")).getImage();
-        playerSpriteRight = new ImageIcon(getClass().getResource("/characters/" + selectedCharacter + "/" + selectedCharacter + "-ship-right.png")).getImage();
+    private void loadSprites() {
+        // Base directory where the sprites are located
+        String basePath = "C:\\Users\\benti\\eclipse-workspace\\Java_assignments\\src\\daptb\\";
+
+        String leftSpritePath = "";
+        String rightSpritePath = "";
+
+        // Determine sprite paths based on the selected character
+        switch (selectedCharacter.toLowerCase()) {
+            case "warrior":
+                leftSpritePath = basePath + "warrior-ship-left.png";
+                rightSpritePath = basePath + "warrior-ship-right.png";
+                break;
+            case "mage":
+                leftSpritePath = basePath + "mage-ship-left.png";
+                rightSpritePath = basePath + "mage-ship-right.png";
+                break;
+            case "rogue":
+                leftSpritePath = basePath + "rogue-ship-left.png";
+                rightSpritePath = basePath + "rogue-ship-right.png";
+                break;
+            case "assassin":
+                leftSpritePath = basePath + "assassin-ship-left.png";
+                rightSpritePath = basePath + "assassin-ship-right.png";
+                break;
+            case "druid":
+                leftSpritePath = basePath + "druid-ship-left.png";
+                rightSpritePath = basePath + "druid-ship-right.png";
+                break;
+            case "paladin":
+                leftSpritePath = basePath + "paladin-ship-left.png";
+                rightSpritePath = basePath + "paladin-ship-right.png";
+                break;
+            default:
+                leftSpritePath = basePath + "default-ship-left.png";
+                rightSpritePath = basePath + "default-ship-right.png";
+                break;
+        }
+
+        System.out.println("Loading left sprite: " + leftSpritePath);
+        System.out.println("Loading right sprite: " + rightSpritePath);
+
+        try {
+            // Load left sprite
+            File leftFile = new File(leftSpritePath);
+            if (!leftFile.exists()) {
+                System.err.println("Error: Left sprite not found at " + leftFile.getAbsolutePath());
+            } else {
+                playerSpriteLeft = new ImageIcon(leftFile.getAbsolutePath()).getImage();
+            }
+
+            // Load right sprite
+            File rightFile = new File(rightSpritePath);
+            if (!rightFile.exists()) {
+                System.err.println("Error: Right sprite not found at " + rightFile.getAbsolutePath());
+            } else {
+                playerSpriteRight = new ImageIcon(rightFile.getAbsolutePath()).getImage();
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading sprites: " + e.getMessage());
+            // Optionally, set default sprites or handle the error as needed
+        }
     }
 
     @Override
@@ -256,20 +316,43 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     }
 
     private Enemy createEnemy(int x, int y, int health, int level, String era) {
+        String enemyName = "";
         switch (level) {
             case 1:
-                return new Enemy(x, y, health, "Pharaoh", new Color(255, 215, 0), level, 2, "circle", era); // Ancient Egypt (gold)
+                enemyName = "pharaoh";
+                break;
             case 2:
-                return new Enemy(x, y, health, "Knight", new Color(105, 105, 105), level, 3, "rectangle", era); // Medieval Europe (dark gray)
+                enemyName = "knight";
+                break;
             case 3:
-                return new Enemy(x, y, health, "Soldier", new Color(107, 142, 35), level, 4, "triangle", era); // World War I (olive green)
+                enemyName = "soldier";
+                break;
             case 4:
-                return new Enemy(x, y, health, "Tank", new Color(34, 139, 34), level, 5, "rectangle", era); // World War II (green)
+                enemyName = "robot";
+                break;
             case 5:
-                return new Enemy(x, y, health, "Robot", new Color(0, 191, 255), level, 6, "circle", era); // Future Warfare (neon blue)
+                enemyName = "robot"; // Future enemies are also robots
+                break;
             default:
-                return new Enemy(x, y, health, "Enemy", Color.RED, level, 2, "circle", era); // Default enemy
+                enemyName = "default";
+                break;
         }
+
+        String enemySpritePath = "C:\\Users\\benti\\eclipse-workspace\\Java_assignments\\src\\daptb\\" + enemyName + "-enemy.png";
+        Image enemySprite = null;
+
+        try {
+            File enemyFile = new File(enemySpritePath);
+            if (enemyFile.exists()) {
+                enemySprite = new ImageIcon(enemyFile.getAbsolutePath()).getImage();
+            } else {
+                System.err.println("Error: Enemy sprite not found at " + enemyFile.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading enemy sprite: " + e.getMessage());
+        }
+
+        return new Enemy(x, y, health, enemyName, Color.RED, level, ENEMY_SPEED, "circle", era, enemySprite);
     }
 
     @Override
@@ -618,25 +701,23 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             }
         }
 
-        // Move bullets
-        Iterator<Bullet> bulletIterator = playerBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
-            if (bullet != null) { // Ensure bullet is not null
-                bullet.move();
-                if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                    bulletIterator.remove();
-                }
+        // Move player bullets and remove off-screen bullets
+        Iterator<Bullet> playerBulletIterator = playerBullets.iterator();
+        while (playerBulletIterator.hasNext()) {
+            Bullet bullet = playerBulletIterator.next();
+            bullet.move();
+            if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
+                playerBulletIterator.remove(); // Remove off-screen bullets
             }
         }
-        bulletIterator = enemyBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
-            if (bullet != null) { // Ensure bullet is not null
-                bullet.move();
-                if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                    bulletIterator.remove();
-                }
+
+        // Move enemy bullets and remove off-screen bullets
+        Iterator<Bullet> enemyBulletIterator = enemyBullets.iterator();
+        while (enemyBulletIterator.hasNext()) {
+            Bullet bullet = enemyBulletIterator.next();
+            bullet.move();
+            if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
+                enemyBulletIterator.remove(); // Remove off-screen bullets
             }
         }
 
@@ -781,8 +862,9 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         private String shape; // Shape of the enemy
         private String era; // Era of the enemy
         private boolean canShootFromAfar; // Flag to enable shooting from afar
+        private Image sprite; // Enemy sprite
 
-        Enemy(int x, int y, int health, String type, Color color, int level, int speed, String shape, String era) {
+        Enemy(int x, int y, int health, String type, Color color, int level, int speed, String shape, String era, Image sprite) {
             this.x = x;
             this.y = y;
             this.health = health;
@@ -794,6 +876,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             this.shape = shape; // Set enemy shape
             this.era = era; // Set enemy era
             this.canShootFromAfar = false; // Default to not shooting from afar
+            this.sprite = sprite; // Set enemy sprite
         }
 
         void setCanShootFromAfar(boolean canShootFromAfar) {
@@ -890,22 +973,26 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
 
         void draw(Graphics g) {
-            g.setColor(color);
-            switch (shape) {
-                case "circle":
-                    g.fillOval(x, y, 50, 50); // Draw enemy as a circle
-                    break;
-                case "rectangle":
-                    g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
-                    break;
-                case "triangle":
-                    int[] xPoints = {x + 25, x, x + 50};
-                    int[] yPoints = {y, y + 50, y + 50};
-                    g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
-                    break;
-                default:
-                    g.fillOval(x, y, 50, 50); // Default to circle
-                    break;
+            if (sprite != null) {
+                g.drawImage(sprite, x, y, 50, 50, null); // Draw enemy sprite
+            } else {
+                g.setColor(color);
+                switch (shape) {
+                    case "circle":
+                        g.fillOval(x, y, 50, 50); // Draw enemy as a circle
+                        break;
+                    case "rectangle":
+                        g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
+                        break;
+                    case "triangle":
+                        int[] xPoints = {x + 25, x, x + 50};
+                        int[] yPoints = {y, y + 50, y + 50};
+                        g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
+                        break;
+                    default:
+                        g.fillOval(x, y, 50, 50); // Default to circle
+                        break;
+                }
             }
         }
     }
@@ -959,4 +1046,3 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 }
-
