@@ -39,8 +39,6 @@ public class CharacterSelect extends JFrame implements ActionListener {
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 scaleBackground();
-                scaleCharacterButtons();
-                scaleCharacterImage();
             }
         });
 
@@ -48,7 +46,6 @@ public class CharacterSelect extends JFrame implements ActionListener {
     }
 
     private void setBackground() {
-        // Load the background image from the daptb package
         ImageIcon backgroundIcon = loadImage("deyplay.jpg");
         backgroundLabel = new JLabel();
         if (backgroundIcon.getImage() == null) {
@@ -67,22 +64,6 @@ public class CharacterSelect extends JFrame implements ActionListener {
             ImageIcon backgroundIcon = (ImageIcon) backgroundLabel.getIcon();
             Image scaledImage = backgroundIcon.getImage().getScaledInstance(getWidth(), getHeight(), Image.SCALE_SMOOTH);
             backgroundLabel.setIcon(new ImageIcon(scaledImage));
-        }
-    }
-
-    private void scaleCharacterButtons() {
-        for (JButton button : characterMap.keySet()) {
-            CharacterData data = characterMap.get(button);
-            int buttonSize = Math.min(getWidth() / 6, getHeight() / 4); // Dynamic button size
-            button.setIcon(scaleImageIcon(data.icon, buttonSize, buttonSize));
-        }
-    }
-
-    private void scaleCharacterImage() {
-        if (characterImageLabel.getIcon() != null) {
-            int imageWidth = getWidth() / 3; // Dynamic image width
-            int imageHeight = getHeight() / 2; // Dynamic image height
-            characterImageLabel.setIcon(scaleImageIcon((ImageIcon) characterImageLabel.getIcon(), imageWidth, imageHeight));
         }
     }
 
@@ -223,11 +204,11 @@ public class CharacterSelect extends JFrame implements ActionListener {
             selectedCharacter = selected.name;
             selectedLabel.setText("Selected: " + selectedCharacter);
             descriptionLabel.setText("<html><div style='width: 350px;'>" + selected.description + "</div></html>");
-            characterImageLabel.setIcon(scaleImageIcon(selected.icon, getWidth() / 3, getHeight() / 2)); // Dynamic image size
+            characterImageLabel.setIcon(scaleImageIcon(selected.icon, 400, 500)); // Larger image
             confirmButton.setEnabled(true);
         } else if (e.getSource() == confirmButton) {
-            JOptionPane.showMessageDialog(this, "You have confirmed: " + selectedCharacter,
-                    "Character Confirmed", JOptionPane.INFORMATION_MESSAGE);
+            // Launch the environment class with the selected character
+            launchEnvironment(selectedCharacter);
         } else if (e.getSource() == resetButton) {
             selectedCharacter = "";
             selectedLabel.setText("Selected: None");
@@ -235,6 +216,23 @@ public class CharacterSelect extends JFrame implements ActionListener {
             characterImageLabel.setIcon(null);
             confirmButton.setEnabled(false);
         }
+    }
+
+    private void launchEnvironment(String selectedCharacter) {
+        // Close the character selection window
+        this.dispose();
+
+        // Create and launch the environment window
+        JFrame frame = new JFrame("Game Environment");
+        environment game = new environment(selectedCharacter);
+        frame.add(game);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        // Start the game loop
+        new Thread(game).start();
     }
 
     private ImageIcon scaleImageIcon(ImageIcon icon, int width, int height) {
