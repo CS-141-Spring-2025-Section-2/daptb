@@ -1,140 +1,272 @@
 package daptb;
 
-import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
-import javax.sound.sampled.*;
-import java.io.InputStream;
-import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashMap;
+import java.util.Map;
 
-public class EndPanel extends JFrame {
+public class EndPanel extends JFrame implements ActionListener {
+
+    private String selectedCharacter = "";
+    private JLabel titleLabel, selectedLabel, descriptionLabel, characterImageLabel;
+    private JButton confirmButton, resetButton;
+    private Map<JButton, CharacterData> characterMap;
+    private JLabel backgroundLabel;
 
     public EndPanel() {
-        setTitle("Game Completed");
-        setExtendedState(JFrame.MAXIMIZED_BOTH);  
-        setUndecorated(true);  
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);  
-        setLocationRelativeTo(null);  
+        setTitle("Select Your Character");
+        setSize(1000, 800); // Larger initial size for better visibility
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setLayout(new BorderLayout(10, 10));
 
-        add(new EndScreenPanel(this, true));  
-        setVisible(true);  
-    }
+        setBackground();
+        initializeCharacters();
 
-    public static void main(String[] args) {
-        new EndPanel();  
-    }
-}
+        JPanel topPanel = createTopPanel();
+        add(topPanel, BorderLayout.NORTH);
 
-class EndScreenPanel extends JPanel {
-    private static Clip clip;  
-    private Image backgroundImage;  
+        JPanel centerPanel = createCenterPanel();
+        add(centerPanel, BorderLayout.CENTER);
 
-    public EndScreenPanel(JFrame parentFrame, boolean playEndMusic) {
-        setLayout(new BorderLayout());
-        loadBackgroundImage("game-end-screen.jpg");  
+        JPanel bottomPanel = createBottomPanel();
+        add(bottomPanel, BorderLayout.SOUTH);
 
-        if (playEndMusic) {
-            stopMusic();  
-            playMusic("game-end.wav");  
-        }
-
-        Font textFont = new Font("Times New Roman", Font.BOLD, 33);
-
-        // ✅ Create centered paragraph labels using HTML
-        JLabel text = createCenteredLabel("Congratulations! You have defeated the Final Boss and beat the game!", textFont, Color.WHITE);
-        JLabel text2 = createCenteredLabel("Thank you for playing!", textFont, Color.WHITE);
-        JLabel text3 = createCenteredLabel("Credits:", textFont, Color.GRAY);
-        JLabel text4 = createCenteredLabel("Character: Dayspring, Title: Abdul, Level/Sprites: Phillip, Design: Tepiwa, Enemies: Benjamin D.A.P.T.B.", textFont, Color.GRAY);
-        JLabel text5 = createCenteredLabel("Press 'Esc' to return to the Main Menu.", textFont, Color.GREEN);
-        JLabel text6 = createCenteredLabel("Press Delete on Mac/Backspace on Windows to exit.", textFont, Color.RED);
-
-        // ✅ Panel to hold text vertically
-        JPanel textContainer = new JPanel();
-        textContainer.setOpaque(false);  
-        textContainer.setLayout(new BoxLayout(textContainer, BoxLayout.Y_AXIS));
-        textContainer.add(Box.createVerticalGlue());
-        for (JLabel label : new JLabel[]{text, text2, text3, text4, text5, text6}) {
-            textContainer.add(label);
-            textContainer.add(Box.createRigidArea(new Dimension(0, 15)));  
-        }
-        textContainer.add(Box.createVerticalGlue());
-
-        // ✅ Center textContainer
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setOpaque(false);  
-        centerPanel.add(textContainer, new GridBagConstraints());  
-
-        add(centerPanel, BorderLayout.CENTER);  
-
-        // ✅ Key listener for navigation
-        addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (clip != null && clip.isRunning()) clip.stop();  
-
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-                    parentFrame.dispose();  
-                    new GameClass();  
-                } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
-                    parentFrame.dispose();  
-                    System.exit(0);  
-                }
+        // Make the window resizable and ensure components scale properly
+        setResizable(true);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                scaleBackground();
+                scaleCharacterButtons();
+                scaleCharacterImage();
             }
         });
 
-        setFocusable(true);
-        requestFocusInWindow();  
+        setVisible(true);
     }
 
-    // ✅ Helper method to create centered JLabel with HTML for text alignment
-    private JLabel createCenteredLabel(String text, Font font, Color color) {
-        JLabel label = new JLabel("<html><div style='text-align: center;'>" + text + "</div></html>", SwingConstants.CENTER);
-        label.setFont(font);
-        label.setForeground(color);
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);  
-        return label;
-    }
-
-    private void loadBackgroundImage(String filepath) {
-        try (InputStream is = getClass().getResourceAsStream(filepath)) {
-            if (is == null) {
-                System.out.println("Error: Background image not found at path: " + filepath);
-                return;
-            }
-            backgroundImage = ImageIO.read(is);
-        } catch (Exception e) {
-            e.printStackTrace();
+    private void setBackground() {
+        // Load the background image from the daptb package
+        ImageIcon backgroundIcon = loadImage("deyplay.jpg");
+        backgroundLabel = new JLabel();
+        if (backgroundIcon.getImage() == null) {
+            System.err.println("Error: Background image not found. Using default background.");
+            backgroundLabel.setBackground(new Color(30, 30, 30)); // Dark gray fallback
+            backgroundLabel.setOpaque(true);
+        } else {
+            backgroundLabel.setIcon(backgroundIcon);
         }
+        backgroundLabel.setLayout(new BorderLayout());
+        setContentPane(backgroundLabel);
+    }
+
+    private void scaleBackground() {
+        if (backgroundLabel.getIcon() != null) {
+            ImageIcon backgroundIcon = (ImageIcon) backgroundLabel.getIcon();
+            Image scaledImage = backgroundIcon.getImage().getScaledInstance(getWidth(), getHeight(), Image.SCALE_SMOOTH);
+            backgroundLabel.setIcon(new ImageIcon(scaledImage));
+        }
+    }
+
+    private void scaleCharacterButtons() {
+        for (JButton button : characterMap.keySet()) {
+            CharacterData data = characterMap.get(button);
+            int buttonSize = Math.min(getWidth() / 6, getHeight() / 4); // Dynamic button size
+            button.setIcon(scaleImageIcon(data.icon, buttonSize, buttonSize));
+        }
+    }
+
+    private void scaleCharacterImage() {
+        if (characterImageLabel.getIcon() != null) {
+            int imageWidth = getWidth() / 3; // Dynamic image width
+            int imageHeight = getHeight() / 2; // Dynamic image height
+            characterImageLabel.setIcon(scaleImageIcon((ImageIcon) characterImageLabel.getIcon(), imageWidth, imageHeight));
+        }
+    }
+
+    private void initializeCharacters() {
+        characterMap = new HashMap<>();
+
+        String[] names = {"Warrior", "Mage", "Rogue", "Assassin", "Druid", "Paladin"};
+        String[] imageFiles = {"warrior.jpeg", "mage.jpeg", "rogue.jpeg", "assassin.jpeg", "druid.jpeg", "paladin.jpeg"};
+        String[] descriptions = {
+            "A strong melee fighter with high defense.",
+            "Master of the arcane arts, uses spells for damage.",
+            "A stealthy and agile character known for speed and precision.",
+            "A deadly and elusive fighter, skilled in swift, silent attacks.",
+            "A guardian of nature, wielding powerful magic to heal allies.",
+            "A holy warrior, devoted to justice and protection."
+        };
+
+        for (int i = 0; i < names.length; i++) {
+            JButton button = createCharacterButton(names[i], imageFiles[i]);
+            characterMap.put(button, new CharacterData(names[i], loadImage(imageFiles[i]), descriptions[i]));
+        }
+    }
+
+    private JButton createCharacterButton(String name, String imageFile) {
+        JButton button = new JButton(name);
+        ImageIcon icon = loadImage(imageFile);
+        if (icon.getImage() == null) {
+            System.err.println("Error: Image not found for " + name + ". Using placeholder.");
+            button.setBackground(new Color(50, 50, 50)); // Dark background for placeholder
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setIcon(scaleImageIcon(icon, 100, 100)); // Initial scaled icon
+        }
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setForeground(Color.WHITE);
+        button.addActionListener(this);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setForeground(Color.YELLOW);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setForeground(Color.WHITE);
+            }
+        });
+        return button;
+    }
+
+    private JPanel createTopPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setOpaque(false);
+
+        titleLabel = new JLabel("Select Your Character", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 32));
+        titleLabel.setForeground(Color.WHITE);
+        panel.add(titleLabel);
+
+        selectedLabel = new JLabel("Selected: None", SwingConstants.CENTER);
+        selectedLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        selectedLabel.setForeground(Color.WHITE);
+        panel.add(selectedLabel);
+
+        return panel;
+    }
+
+    private JPanel createCenterPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+
+        characterImageLabel = new JLabel();
+        characterImageLabel.setHorizontalAlignment(JLabel.CENTER);
+        panel.add(characterImageLabel, BorderLayout.CENTER);
+
+        descriptionLabel = new JLabel("Select a character to see details.", SwingConstants.LEFT);
+        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 18));
+        descriptionLabel.setForeground(Color.WHITE);
+        panel.add(descriptionLabel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createBottomPanel() {
+        JPanel panel = new JPanel(new GridLayout(2, 3, 10, 10)); // Grid layout for character buttons
+        panel.setOpaque(false);
+
+        for (JButton button : characterMap.keySet()) {
+            panel.add(button);
+        }
+
+        confirmButton = new JButton("Confirm");
+        resetButton = new JButton("Reset");
+        confirmButton.setEnabled(false);
+
+        confirmButton.addActionListener(this);
+        resetButton.addActionListener(this);
+
+        styleButton(confirmButton);
+        styleButton(resetButton);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(resetButton);
+
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setOpaque(false);
+        wrapperPanel.add(panel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return wrapperPanel;
+    }
+
+    private void styleButton(JButton button) {
+        button.setFont(new Font("Arial", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(59, 89, 182));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(89, 119, 212));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(59, 89, 182));
+            }
+        });
     }
 
     @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (backgroundImage != null) {
-            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);  
+    public void actionPerformed(ActionEvent e) {
+        if (characterMap.containsKey(e.getSource())) {
+            CharacterData selected = characterMap.get(e.getSource());
+            selectedCharacter = selected.name;
+            selectedLabel.setText("Selected: " + selectedCharacter);
+            descriptionLabel.setText("<html><div style='width: 350px;'>" + selected.description + "</div></html>");
+            characterImageLabel.setIcon(scaleImageIcon(selected.icon, getWidth() / 3, getHeight() / 2)); // Dynamic image size
+            confirmButton.setEnabled(true);
+        } else if (e.getSource() == confirmButton) {
+            JOptionPane.showMessageDialog(this, "You have confirmed: " + selectedCharacter,
+                    "Character Confirmed", JOptionPane.INFORMATION_MESSAGE);
+        } else if (e.getSource() == resetButton) {
+            selectedCharacter = "";
+            selectedLabel.setText("Selected: None");
+            descriptionLabel.setText("Select a character to see details.");
+            characterImageLabel.setIcon(null);
+            confirmButton.setEnabled(false);
         }
     }
 
-    private static void playMusic(String filepath) {
-        try (InputStream is = EndScreenPanel.class.getResourceAsStream(filepath)) {
-            if (is == null) {
-                System.out.println("Error: Sound file not found at: " + filepath);
-                return;
-            }
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(is);
-            clip = AudioSystem.getClip();
-            clip.open(audioStream);
-            clip.start();
-            clip.loop(Clip.LOOP_CONTINUOUSLY);  
-        } catch (Exception e) {
-            e.printStackTrace();
+    private ImageIcon scaleImageIcon(ImageIcon icon, int width, int height) {
+        if (icon == null || icon.getImage() == null) return new ImageIcon();
+        Image img = icon.getImage();
+        Image scaledImg = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        return new ImageIcon(scaledImg);
+    }
+
+    private ImageIcon loadImage(String fileName) {
+        // Load images from the daptb package
+        java.net.URL imgUrl = getClass().getResource("/daptb/" + fileName);
+        if (imgUrl == null) {
+            System.err.println("Error: Image not found - " + fileName);
+            return new ImageIcon(); // Return an empty ImageIcon if the image is not found
+        }
+        return new ImageIcon(imgUrl);
+    }
+
+    class CharacterData {
+        String name;
+        ImageIcon icon;
+        String description;
+
+        CharacterData(String name, ImageIcon icon, String description) {
+            this.name = name;
+            this.icon = icon;
+            this.description = description;
         }
     }
 
-    private static void stopMusic() {
-        if (clip != null && clip.isRunning()) {
-            clip.stop();
-            clip.close();
-        }
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(EndPanel::new);
     }
 }
