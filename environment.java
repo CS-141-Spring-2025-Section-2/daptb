@@ -1,6 +1,7 @@
 package daptb;
 
-// Benjamin Nukunu Davis
+
+//Benjamin Nukunu Davis
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -54,6 +55,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     private String selectedCharacter; // Selected character from the character selection screen
     private Image playerSpriteLeft, playerSpriteRight; // Sprites for the selected character
+    private boolean isFacingLeft; // Flag to track player's facing direction
 
     public environment(String selectedCharacter) {
         this.selectedCharacter = selectedCharacter;
@@ -90,6 +92,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         currentWave = 0;
         bombUsesRemaining = BOMB_COOLDOWN;
         isPlayerBoxedIn = false;
+        isFacingLeft = false;
 
         // Default player name
         playerName = "Player";
@@ -140,6 +143,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 break;
         }
 
+        // Debugging
         System.out.println("Loading left sprite: " + leftSpritePath);
         System.out.println("Loading right sprite: " + rightSpritePath);
 
@@ -457,12 +461,10 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         Graphics2D g2d = (Graphics2D) g;
 
         // Draw the selected character's sprite
-        if (keysPressed[1]) { // Right key pressed
-            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
-        } else if (keysPressed[0]) { // Left key pressed
+        if (isFacingLeft) {
             g2d.drawImage(playerSpriteLeft, playerX, playerY, 50, 50, null);
         } else {
-            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null); // Default to right sprite
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
         }
 
         // Draw the gun extension
@@ -514,8 +516,14 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_LEFT) keysPressed[0] = true; // Left
-        if (key == KeyEvent.VK_RIGHT) keysPressed[1] = true; // Right
+        if (key == KeyEvent.VK_LEFT) {
+            keysPressed[0] = true; // Left
+            isFacingLeft = true;
+        }
+        if (key == KeyEvent.VK_RIGHT) {
+            keysPressed[1] = true; // Right
+            isFacingLeft = false;
+        }
         if (key == KeyEvent.VK_UP) keysPressed[2] = true; // Up
         if (key == KeyEvent.VK_DOWN) keysPressed[3] = true; // Down
         if (key == KeyEvent.VK_SPACE) {
