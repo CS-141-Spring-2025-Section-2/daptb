@@ -6,7 +6,9 @@ import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
@@ -50,7 +52,13 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     private int bombUsesRemaining; // Number of bomb uses remaining
     private boolean isPlayerBoxedIn; // Flag to check if the player is boxed in by enemies
 
-    public environment() {
+    private String selectedCharacter; // Selected character from the character selection screen
+    private Image playerSpriteLeft, playerSpriteRight; // Sprites for the selected character
+
+    public environment(String selectedCharacter) {
+        this.selectedCharacter = selectedCharacter;
+        loadSprites();
+
         // Initialize dynamic width and height
         WIDTH = 800;
         HEIGHT = 600;
@@ -83,17 +91,78 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         bombUsesRemaining = BOMB_COOLDOWN;
         isPlayerBoxedIn = false;
 
-        // Ask for player's name
-        playerName = JOptionPane.showInputDialog(this, "Enter your name:");
-        if (playerName == null || playerName.trim().isEmpty()) {
-            playerName = "Player"; // Default name
-        }
+        // Default player name
+        playerName = "Player";
 
         loadCustomFont();
         loadBackgroundImage(); // Load background for the current level
         loadShootSound(); // Load the shooting sound
         loadBackgroundMusic(); // Load background music
         startLevel();
+    }
+
+    private void loadSprites() {
+        // Base directory where the sprites are located
+        String basePath = "C:\\Users\\benti\\eclipse-workspace\\Java_assignments\\src\\daptb\\";
+
+        String leftSpritePath = "";
+        String rightSpritePath = "";
+
+        // Determine sprite paths based on the selected character
+        switch (selectedCharacter.toLowerCase()) {
+            case "warrior":
+                leftSpritePath = basePath + "warrior-ship-left.png";
+                rightSpritePath = basePath + "warrior-ship-right.png";
+                break;
+            case "mage":
+                leftSpritePath = basePath + "mage-ship-left.png";
+                rightSpritePath = basePath + "mage-ship-right.png";
+                break;
+            case "rogue":
+                leftSpritePath = basePath + "rogue-ship-left.png";
+                rightSpritePath = basePath + "rogue-ship-right.png";
+                break;
+            case "assassin":
+                leftSpritePath = basePath + "assasin-ship-left.png";
+                rightSpritePath = basePath + "assasin-ship-right.png";
+                break;
+            case "druid":
+                leftSpritePath = basePath + "druid-ship-left.png";
+                rightSpritePath = basePath + "druid-ship-right.png";
+                break;
+            case "paladin":
+                leftSpritePath = basePath + "paladin-ship-left.png";
+                rightSpritePath = basePath + "paladin-ship-right.png";
+                break;
+            default:
+                leftSpritePath = basePath + "default-ship-left.png";
+                rightSpritePath = basePath + "default-ship-right.png";
+                break;
+        }
+
+        System.out.println("Loading left sprite: " + leftSpritePath);
+        System.out.println("Loading right sprite: " + rightSpritePath);
+
+        try {
+            // Load left sprite
+            File leftFile = new File(leftSpritePath);
+            if (!leftFile.exists()) {
+                System.err.println("Error: Left sprite not found at " + leftFile.getAbsolutePath());
+            } else {
+                playerSpriteLeft = new ImageIcon(leftFile.getAbsolutePath()).getImage();
+            }
+
+            // Load right sprite
+            File rightFile = new File(rightSpritePath);
+            if (!rightFile.exists()) {
+                System.err.println("Error: Right sprite not found at " + rightFile.getAbsolutePath());
+            } else {
+                playerSpriteRight = new ImageIcon(rightFile.getAbsolutePath()).getImage();
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading sprites: " + e.getMessage());
+            // Optionally, set default sprites or handle the error as needed
+        }
     }
 
     @Override
@@ -247,20 +316,43 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     }
 
     private Enemy createEnemy(int x, int y, int health, int level, String era) {
+        String enemyName = "";
         switch (level) {
             case 1:
-                return new Enemy(x, y, health, "Pharaoh", new Color(255, 215, 0), level, 2, "circle", era); // Ancient Egypt (gold)
+                enemyName = "pharaoh";
+                break;
             case 2:
-                return new Enemy(x, y, health, "Knight", new Color(105, 105, 105), level, 3, "rectangle", era); // Medieval Europe (dark gray)
+                enemyName = "knight";
+                break;
             case 3:
-                return new Enemy(x, y, health, "Soldier", new Color(107, 142, 35), level, 4, "triangle", era); // World War I (olive green)
+                enemyName = "soldier";
+                break;
             case 4:
-                return new Enemy(x, y, health, "Tank", new Color(34, 139, 34), level, 5, "rectangle", era); // World War II (green)
+                enemyName = "robot";
+                break;
             case 5:
-                return new Enemy(x, y, health, "Robot", new Color(0, 191, 255), level, 6, "circle", era); // Future Warfare (neon blue)
+                enemyName = "robot"; // Future enemies are also robots
+                break;
             default:
-                return new Enemy(x, y, health, "Enemy", Color.RED, level, 2, "circle", era); // Default enemy
+                enemyName = "default";
+                break;
         }
+
+        String enemySpritePath = "C:\\Users\\benti\\eclipse-workspace\\Java_assignments\\src\\daptb\\" + enemyName + "-enemy.png";
+        Image enemySprite = null;
+
+        try {
+            File enemyFile = new File(enemySpritePath);
+            if (enemyFile.exists()) {
+                enemySprite = new ImageIcon(enemyFile.getAbsolutePath()).getImage();
+            } else {
+                System.err.println("Error: Enemy sprite not found at " + enemyFile.getAbsolutePath());
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading enemy sprite: " + e.getMessage());
+        }
+
+        return new Enemy(x, y, health, enemyName, Color.RED, level, ENEMY_SPEED, "circle", era, enemySprite);
     }
 
     @Override
@@ -364,16 +456,21 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     private void drawPlayer(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
 
-        // Draw player as a circle with a line indicating direction
-        g2d.setColor(Color.BLUE);
-        g2d.fillOval(playerX, playerY, 50, 50); // Player body
+        // Draw the selected character's sprite
+        if (keysPressed[1]) { // Right key pressed
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
+        } else if (keysPressed[0]) { // Left key pressed
+            g2d.drawImage(playerSpriteLeft, playerX, playerY, 50, 50, null);
+        } else {
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null); // Default to right sprite
+        }
 
-        // Draw a larger red line indicating the direction the player is facing
-        int lineX = playerX + 25 + (int) (50 * Math.cos(playerAngle)); // Increased length
-        int lineY = playerY + 25 + (int) (50 * Math.sin(playerAngle)); // Increased length
+        // Draw the gun extension
+        int gunX = playerX + 25 + (int) (50 * Math.cos(playerAngle)); // Increased length
+        int gunY = playerY + 25 + (int) (50 * Math.sin(playerAngle)); // Increased length
         g2d.setColor(Color.RED); // Changed to red
         g2d.setStroke(new BasicStroke(3)); // Thicker line
-        g2d.drawLine(playerX + 25, playerY + 25, lineX, lineY);
+        g2d.drawLine(playerX + 25, playerY + 25, gunX, gunY);
     }
 
     private void drawHealthBar(Graphics g) {
@@ -498,6 +595,16 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                     startLevel();
                 } else {
                     // Player has completed the final level
+                    // Stop the shooting sound
+                    if (shootSound != null && shootSound.isRunning()) {
+                        shootSound.stop();
+                    }
+
+                    // Stop the background music
+                    if (backgroundMusic != null && backgroundMusic.isRunning()) {
+                        backgroundMusic.stop();
+                    }
+
                     // Transition to the EndPanel
                     JFrame endFrame = new JFrame("Game Over");
                     EndScreenPanel endPanel = new EndScreenPanel(endFrame, true); // Pass the JFrame and playEndMusic flag
@@ -594,21 +701,23 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             }
         }
 
-        // Move bullets
-        Iterator<Bullet> bulletIterator = playerBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
+        // Move player bullets and remove off-screen bullets
+        Iterator<Bullet> playerBulletIterator = playerBullets.iterator();
+        while (playerBulletIterator.hasNext()) {
+            Bullet bullet = playerBulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                bulletIterator.remove();
+                playerBulletIterator.remove(); // Remove off-screen bullets
             }
         }
-        bulletIterator = enemyBullets.iterator();
-        while (bulletIterator.hasNext()) {
-            Bullet bullet = bulletIterator.next();
+
+        // Move enemy bullets and remove off-screen bullets
+        Iterator<Bullet> enemyBulletIterator = enemyBullets.iterator();
+        while (enemyBulletIterator.hasNext()) {
+            Bullet bullet = enemyBulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                bulletIterator.remove();
+                enemyBulletIterator.remove(); // Remove off-screen bullets
             }
         }
 
@@ -649,6 +758,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
         // Player bullets hitting enemies
         for (Bullet bullet : playerBulletsCopy) {
+            if (bullet == null) continue; // Skip if bullet is null
             for (Enemy enemy : enemiesCopy) {
                 if (bullet.x >= enemy.x && bullet.x <= enemy.x + 50 &&
                     bullet.y >= enemy.y && bullet.y <= enemy.y + 50) {
@@ -669,6 +779,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
         // Enemy bullets hitting player
         for (Bullet bullet : enemyBulletsCopy) {
+            if (bullet == null) continue; // Skip if bullet is null
             if (bullet.x >= playerX && bullet.x <= playerX + 50 &&
                 bullet.y >= playerY && bullet.y <= playerY + 50) {
                 playerHealth--;
@@ -730,7 +841,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     public static void main(String[] args) {
         JFrame frame = new JFrame("Game Environment");
-        environment game = new environment();
+        environment game = new environment("Assassin"); // Default character for testing
         frame.add(game);
         frame.pack();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -743,7 +854,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     class Enemy {
         int x, y, health;
         private long lastShotTime;
-        private static final long SHOOT_COOLDOWN = 1000; // 1 second cooldown
+        private static final long SHOOT_COOLDOWN = 500; // Reduced cooldown for faster shooting
         private int level;
         private String type;
         private Color color;
@@ -751,8 +862,9 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         private String shape; // Shape of the enemy
         private String era; // Era of the enemy
         private boolean canShootFromAfar; // Flag to enable shooting from afar
+        private Image sprite; // Enemy sprite
 
-        Enemy(int x, int y, int health, String type, Color color, int level, int speed, String shape, String era) {
+        Enemy(int x, int y, int health, String type, Color color, int level, int speed, String shape, String era, Image sprite) {
             this.x = x;
             this.y = y;
             this.health = health;
@@ -764,6 +876,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             this.shape = shape; // Set enemy shape
             this.era = era; // Set enemy era
             this.canShootFromAfar = false; // Default to not shooting from afar
+            this.sprite = sprite; // Set enemy sprite
         }
 
         void setCanShootFromAfar(boolean canShootFromAfar) {
@@ -860,22 +973,26 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
 
         void draw(Graphics g) {
-            g.setColor(color);
-            switch (shape) {
-                case "circle":
-                    g.fillOval(x, y, 50, 50); // Draw enemy as a circle
-                    break;
-                case "rectangle":
-                    g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
-                    break;
-                case "triangle":
-                    int[] xPoints = {x + 25, x, x + 50};
-                    int[] yPoints = {y, y + 50, y + 50};
-                    g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
-                    break;
-                default:
-                    g.fillOval(x, y, 50, 50); // Default to circle
-                    break;
+            if (sprite != null) {
+                g.drawImage(sprite, x, y, 50, 50, null); // Draw enemy sprite
+            } else {
+                g.setColor(color);
+                switch (shape) {
+                    case "circle":
+                        g.fillOval(x, y, 50, 50); // Draw enemy as a circle
+                        break;
+                    case "rectangle":
+                        g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
+                        break;
+                    case "triangle":
+                        int[] xPoints = {x + 25, x, x + 50};
+                        int[] yPoints = {y, y + 50, y + 50};
+                        g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
+                        break;
+                    default:
+                        g.fillOval(x, y, 50, 50); // Default to circle
+                        break;
+                }
             }
         }
     }
