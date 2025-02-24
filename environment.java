@@ -72,6 +72,9 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         addMouseMotionListener(this);
         addComponentListener(this); // Add component listener for resizing
 
+        // Ask for the player's name
+        askForPlayerName();
+
         playerX = WIDTH / 2 - 25; // Center player horizontally
         playerY = HEIGHT / 2 - 25; // Center player vertically
         playerHealth = PLAYER_HEALTH;
@@ -94,15 +97,27 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         isPlayerBoxedIn = false;
         isFacingLeft = false;
 
-        // Default player name
-        playerName = "Player";
-
         loadCustomFont();
         loadBackgroundImage(); // Load background for the current level
         loadShootSound(); // Load the shooting sound
         loadBackgroundMusic(); // Load background music
         startLevel();
     }
+    
+    
+    
+    private void askForPlayerName() {
+        // Prompt the user for their name
+        String name = JOptionPane.showInputDialog(this, "Enter your name:", "Player Name", JOptionPane.PLAIN_MESSAGE);
+
+        // If the user provides a name, store it; otherwise, use a default name
+        if (name != null && !name.trim().isEmpty()) {
+            playerName = name.trim(); // Store the trimmed name
+        } else {
+            playerName = "Player"; // Default name if no input is provided
+        }
+    }
+    
 
     private void loadSprites() {
         // Base directory where the sprites are located
@@ -431,7 +446,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         g2d.setFont(customFont.deriveFont(20f));
         g2d.drawString("Player: " + playerName, WIDTH / 2 - 130, 35); // Player name centered
     }
-
+    
     private void drawLevelName(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         String levelName = "";
