@@ -529,26 +529,31 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     }
 
     @Override
+    // Control Keys
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_LEFT) {
-            keysPressed[0] = true; // Left
+        if (key == KeyEvent.VK_A) { // Move left (A key)
+            keysPressed[0] = true;
             isFacingLeft = true;
         }
-        if (key == KeyEvent.VK_RIGHT) {
-            keysPressed[1] = true; // Right
+        if (key == KeyEvent.VK_D) { // Move right (D key)
+            keysPressed[1] = true;
             isFacingLeft = false;
         }
-        if (key == KeyEvent.VK_UP) keysPressed[2] = true; // Up
-        if (key == KeyEvent.VK_DOWN) keysPressed[3] = true; // Down
-        if (key == KeyEvent.VK_SPACE) {
+        if (key == KeyEvent.VK_W) { // Move up (W key)
+            keysPressed[2] = true;
+        }
+        if (key == KeyEvent.VK_S) { // Move down (S key)
+            keysPressed[3] = true;
+        }
+        if (key == KeyEvent.VK_SPACE) { // Shoot (Spacebar)
             // Shoot in the direction the player is facing
             double bulletSpeedX = BULLET_SPEED * Math.cos(playerAngle);
             double bulletSpeedY = BULLET_SPEED * Math.sin(playerAngle);
             playerBullets.add(new Bullet(playerX + 25, playerY + 25, bulletSpeedX, bulletSpeedY, Color.RED)); // Red bullets
             playShootSound(); // Play the shooting sound
         }
-        if (key == KeyEvent.VK_G && bombUsesRemaining > 0) {
+        if (key == KeyEvent.VK_G && bombUsesRemaining > 0) { // Activate bomb (G key)
             activateBomb();
             bombUsesRemaining--;
         }
@@ -577,15 +582,24 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         isPlayerBoxedIn = false;
     }
 
+    
+  
     @Override
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_LEFT) keysPressed[0] = false; // Left
-        if (key == KeyEvent.VK_RIGHT) keysPressed[1] = false; // Right
-        if (key == KeyEvent.VK_UP) keysPressed[2] = false; // Up
-        if (key == KeyEvent.VK_DOWN) keysPressed[3] = false; // Down
+        if (key == KeyEvent.VK_A) { // Stop moving left (A key)
+            keysPressed[0] = false;
+        }
+        if (key == KeyEvent.VK_D) { // Stop moving right (D key)
+            keysPressed[1] = false;
+        }
+        if (key == KeyEvent.VK_W) { // Stop moving up (W key)
+            keysPressed[2] = false;
+        }
+        if (key == KeyEvent.VK_S) { // Stop moving down (S key)
+            keysPressed[3] = false;
+        }
     }
-
     @Override
     public void keyTyped(KeyEvent e) {}
 

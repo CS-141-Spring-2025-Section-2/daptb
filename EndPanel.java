@@ -4,6 +4,8 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.sound.sampled.*;
+
+import java.io.BufferedInputStream;
 import java.io.InputStream;
 import javax.imageio.ImageIO;
 import java.awt.Font;
@@ -162,11 +164,26 @@ class EndScreenPanel extends JPanel {
                 System.out.println("Error: Sound file not found at: " + filepath);
                 return;
             }
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(is);
+
+            // Wrap the InputStream in a BufferedInputStream
+            BufferedInputStream bufferedInputStream = new BufferedInputStream(is);
+
+            // Use the BufferedInputStream to create the AudioInputStream
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedInputStream);
+
+            // Get the Clip and open it
             clip = AudioSystem.getClip();
             clip.open(audioStream);
+            System.out.println("Clip opened successfully."); // Debug statement
+
+            // Adjust volume (optional)
+            FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            gainControl.setValue(6.0f); // Increase volume by 6 decibels
+
+            // Start the Clip
             clip.start();
-            clip.loop(Clip.LOOP_CONTINUOUSLY);  
+            System.out.println("Clip started successfully."); // Debug statement
+            clip.loop(Clip.LOOP_CONTINUOUSLY); // Loop the music
         } catch (Exception e) {
             e.printStackTrace();
         }
