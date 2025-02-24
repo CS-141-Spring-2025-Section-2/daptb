@@ -106,7 +106,7 @@ class EndScreenPanel extends JPanel {
                 
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) { // Create and show the main menu BEFORE starting the fade.                  
                 	// ***CHANGE THIS LINE TO THE NAME OF THE MAIN MENU***
-                    GameClass mainMenu = new GameClass(); // ***CHANGE THIS LINE TO THE NAME OF THE MAIN MENU***
+                    GameTitle mainMenu = new GameTitle(); // ***CHANGE THIS LINE TO THE NAME OF THE MAIN MENU***
                     
                     // Use a Timer to gradually reduce the opacity of the current frame.
                     Timer fadeTimer = new Timer(50, null);
