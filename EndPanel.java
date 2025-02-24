@@ -77,65 +77,48 @@ class EndScreenPanel extends JPanel {
         centerPanel.add(textContainer, new GridBagConstraints());  
 
         add(centerPanel, BorderLayout.CENTER);  
-        class FadePanel extends JComponent {
-            private float alpha = 0f;
 
-            public void setAlpha(float a) {
-                alpha = a;
-                repaint();
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2d = (Graphics2D) g.create();
-                g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-                g2d.setColor(Color.BLACK);
-                g2d.fillRect(0, 0, getWidth(), getHeight());
-                g2d.dispose();
-            }
-        }
-        
-        
-        
-        
-//
+        // Add key listener for Esc and Backspace keys
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (clip != null && clip.isRunning()) clip.stop();
-                
-                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) { // Create and show the main menu BEFORE starting the fade.                  
-                	// ***CHANGE THIS LINE TO THE NAME OF THE MAIN MENU***
-                    GameTitle mainMenu = new GameTitle(); // ***CHANGE THIS LINE TO THE NAME OF THE MAIN MENU***
-                    
-                    // Use a Timer to gradually reduce the opacity of the current frame.
+
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    System.out.println("Esc key pressed. Transitioning to main menu...");
+
+                    // Create the main menu
+                    GameClass mainMenu = new GameClass();
+                    mainMenu.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the main menu
+                    mainMenu.setUndecorated(true); // Remove decorations (if needed)
+                    mainMenu.setVisible(true); // Make the main menu visible
+
+                    // Use a Timer to handle the fade-out of EndPanel
                     Timer fadeTimer = new Timer(50, null);
                     fadeTimer.addActionListener(new ActionListener() {
-                        float opacity = 1f;
+                        float opacity = 1f; // Start with 100% opacity for EndPanel
+
                         @Override
                         public void actionPerformed(ActionEvent evt) {
-                            opacity -= 0.05f;  // Adjust for speed.
+                            opacity -= 0.05f; // Reduce opacity of EndPanel
                             if (opacity <= 0f) {
                                 fadeTimer.stop();
-                                parentFrame.dispose();  // EndPanel frame goes away.
+                                parentFrame.dispose(); // Dispose of EndPanel after fade-out
+                                System.out.println("EndPanel disposed. Main menu is now active.");
                             } else {
-                                // Set the frame's opacity to gradually reveal the main menu behind.
-                                parentFrame.setOpacity(opacity);
+                                parentFrame.setOpacity(opacity); // Fade out EndPanel
                             }
                         }
                     });
                     fadeTimer.start();
                 } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+                    System.out.println("Backspace key pressed. Exiting application...");
                     parentFrame.dispose();
                     System.exit(0);
                 }
             }
         });
-//
-        
-     
-        
-        
+
         setFocusable(true);
         requestFocusInWindow();  
 
