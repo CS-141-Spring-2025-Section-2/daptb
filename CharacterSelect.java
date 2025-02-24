@@ -13,16 +13,16 @@ public class CharacterSelect extends JFrame implements ActionListener {
     private JLabel titleLabel, selectedLabel, descriptionLabel, characterImageLabel;
     private JButton confirmButton, resetButton;
     private Map<JButton, CharacterData> characterMap;
-    private JPanel characterPanel;
+    private JLabel backgroundLabel;
 
     public CharacterSelect() {
         setTitle("Select Your Character");
-        setSize(900, 700);
+        setSize(1000, 800); // Larger initial size for better visibility
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
-        getContentPane().setBackground(new Color(30, 30, 30)); // Set background color
 
+        setBackground();
         initializeCharacters();
 
         JPanel topPanel = createTopPanel();
@@ -34,7 +34,37 @@ public class CharacterSelect extends JFrame implements ActionListener {
         JPanel bottomPanel = createBottomPanel();
         add(bottomPanel, BorderLayout.SOUTH);
 
+        // Make the window resizable and ensure components scale properly
+        setResizable(true);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                scaleBackground();
+            }
+        });
+
         setVisible(true);
+    }
+
+    private void setBackground() {
+        ImageIcon backgroundIcon = loadImage("deyplay.jpg");
+        backgroundLabel = new JLabel();
+        if (backgroundIcon.getImage() == null) {
+            System.err.println("Error: Background image not found. Using default background.");
+            backgroundLabel.setBackground(new Color(30, 30, 30)); // Dark gray fallback
+            backgroundLabel.setOpaque(true);
+        } else {
+            backgroundLabel.setIcon(backgroundIcon);
+        }
+        backgroundLabel.setLayout(new BorderLayout());
+        setContentPane(backgroundLabel);
+    }
+
+    private void scaleBackground() {
+        if (backgroundLabel.getIcon() != null) {
+            ImageIcon backgroundIcon = (ImageIcon) backgroundLabel.getIcon();
+            Image scaledImage = backgroundIcon.getImage().getScaledInstance(getWidth(), getHeight(), Image.SCALE_SMOOTH);
+            backgroundLabel.setIcon(new ImageIcon(scaledImage));
+        }
     }
 
     private void initializeCharacters() {
@@ -45,22 +75,44 @@ public class CharacterSelect extends JFrame implements ActionListener {
         String[] descriptions = {
             "A strong melee fighter with high defense.",
             "Master of the arcane arts, uses spells for damage.",
-            "A stealthy and agile character known for speed and precision. Excels in ambush tactics and evasive maneuvers, striking swiftly from the shadows.",
-            "A deadly and elusive fighter, skilled in swift, silent attacks and assassination techniques.",
-            "A guardian of nature, wielding powerful magic to heal allies and control the elements.",
-            "A holy warrior, devoted to justice and protection, armed with divine magic and strong melee capabilities."
+            "A stealthy and agile character known for speed and precision.",
+            "A deadly and elusive fighter, skilled in swift, silent attacks.",
+            "A guardian of nature, wielding powerful magic to heal allies.",
+            "A holy warrior, devoted to justice and protection."
         };
 
         for (int i = 0; i < names.length; i++) {
-            JButton button = new JButton();
-            ImageIcon icon = loadImage(imageFiles[i]);
-            button.setIcon(scaleImageIcon(icon, 80, 80));
-            button.setFocusPainted(false);
-            button.setBorderPainted(false);
-            button.setContentAreaFilled(false);
-            button.addActionListener(this);
-            characterMap.put(button, new CharacterData(names[i], icon, descriptions[i]));
+            JButton button = createCharacterButton(names[i], imageFiles[i]);
+            characterMap.put(button, new CharacterData(names[i], loadImage(imageFiles[i]), descriptions[i]));
         }
+    }
+
+    private JButton createCharacterButton(String name, String imageFile) {
+        JButton button = new JButton(name);
+        ImageIcon icon = loadImage(imageFile);
+        if (icon.getImage() == null) {
+            System.err.println("Error: Image not found for " + name + ". Using placeholder.");
+            button.setBackground(new Color(50, 50, 50)); // Dark background for placeholder
+            button.setForeground(Color.WHITE);
+        } else {
+            button.setIcon(scaleImageIcon(icon, 100, 100)); // Initial scaled icon
+        }
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setContentAreaFilled(false);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setForeground(Color.WHITE);
+        button.addActionListener(this);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setForeground(Color.YELLOW);
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setForeground(Color.WHITE);
+            }
+        });
+        return button;
     }
 
     private JPanel createTopPanel() {
@@ -69,12 +121,12 @@ public class CharacterSelect extends JFrame implements ActionListener {
         panel.setOpaque(false);
 
         titleLabel = new JLabel("Select Your Character", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 32));
         titleLabel.setForeground(Color.WHITE);
         panel.add(titleLabel);
 
         selectedLabel = new JLabel("Selected: None", SwingConstants.CENTER);
-        selectedLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        selectedLabel.setFont(new Font("Arial", Font.BOLD, 20));
         selectedLabel.setForeground(Color.WHITE);
         panel.add(selectedLabel);
 
@@ -86,20 +138,19 @@ public class CharacterSelect extends JFrame implements ActionListener {
         panel.setOpaque(false);
 
         characterImageLabel = new JLabel();
-        characterImageLabel.setPreferredSize(new Dimension(350, 400));
         characterImageLabel.setHorizontalAlignment(JLabel.CENTER);
-        panel.add(characterImageLabel, BorderLayout.WEST);
+        panel.add(characterImageLabel, BorderLayout.CENTER);
 
         descriptionLabel = new JLabel("Select a character to see details.", SwingConstants.LEFT);
-        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+        descriptionLabel.setFont(new Font("Arial", Font.PLAIN, 18));
         descriptionLabel.setForeground(Color.WHITE);
-        panel.add(descriptionLabel, BorderLayout.CENTER);
+        panel.add(descriptionLabel, BorderLayout.SOUTH);
 
         return panel;
     }
 
     private JPanel createBottomPanel() {
-        JPanel panel = new JPanel(new FlowLayout());
+        JPanel panel = new JPanel(new GridLayout(2, 3, 10, 10)); // Grid layout for character buttons
         panel.setOpaque(false);
 
         for (JButton button : characterMap.keySet()) {
@@ -113,9 +164,37 @@ public class CharacterSelect extends JFrame implements ActionListener {
         confirmButton.addActionListener(this);
         resetButton.addActionListener(this);
 
-        panel.add(confirmButton);
-        panel.add(resetButton);
-        return panel;
+        styleButton(confirmButton);
+        styleButton(resetButton);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        buttonPanel.setOpaque(false);
+        buttonPanel.add(confirmButton);
+        buttonPanel.add(resetButton);
+
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setOpaque(false);
+        wrapperPanel.add(panel, BorderLayout.CENTER);
+        wrapperPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return wrapperPanel;
+    }
+
+    private void styleButton(JButton button) {
+        button.setFont(new Font("Arial", Font.BOLD, 16));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(59, 89, 182));
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(89, 119, 212));
+            }
+
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(new Color(59, 89, 182));
+            }
+        });
     }
 
     @Override
@@ -124,12 +203,12 @@ public class CharacterSelect extends JFrame implements ActionListener {
             CharacterData selected = characterMap.get(e.getSource());
             selectedCharacter = selected.name;
             selectedLabel.setText("Selected: " + selectedCharacter);
-            descriptionLabel.setText("" + selected.description);
-            characterImageLabel.setIcon(scaleImageIcon(selected.icon, 300, 400));
+            descriptionLabel.setText("<html><div style='width: 350px;'>" + selected.description + "</div></html>");
+            characterImageLabel.setIcon(scaleImageIcon(selected.icon, 400, 500)); // Larger image
             confirmButton.setEnabled(true);
         } else if (e.getSource() == confirmButton) {
-            JOptionPane.showMessageDialog(this, "You have confirmed: " + selectedCharacter,
-                    "Character Confirmed", JOptionPane.INFORMATION_MESSAGE);
+            // Launch the environment class with the selected character
+            launchEnvironment(selectedCharacter);
         } else if (e.getSource() == resetButton) {
             selectedCharacter = "";
             selectedLabel.setText("Selected: None");
@@ -137,6 +216,23 @@ public class CharacterSelect extends JFrame implements ActionListener {
             characterImageLabel.setIcon(null);
             confirmButton.setEnabled(false);
         }
+    }
+
+    private void launchEnvironment(String selectedCharacter) {
+        // Close the character selection window
+        this.dispose();
+
+        // Create and launch the environment window
+        JFrame frame = new JFrame("Game Environment");
+        environment game = new environment(selectedCharacter);
+        frame.add(game);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+
+        // Start the game loop
+        new Thread(game).start();
     }
 
     private ImageIcon scaleImageIcon(ImageIcon icon, int width, int height) {
@@ -147,10 +243,11 @@ public class CharacterSelect extends JFrame implements ActionListener {
     }
 
     private ImageIcon loadImage(String fileName) {
-        java.net.URL imgUrl = getClass().getResource("/resources/" + fileName);
+        // Load images from the daptb package
+        java.net.URL imgUrl = getClass().getResource("/daptb/" + fileName);
         if (imgUrl == null) {
             System.err.println("Error: Image not found - " + fileName);
-            return new ImageIcon();
+            return new ImageIcon(); // Return an empty ImageIcon if the image is not found
         }
         return new ImageIcon(imgUrl);
     }
