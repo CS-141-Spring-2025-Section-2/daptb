@@ -1,6 +1,7 @@
 package daptb;
 
-// Benjamin Nukunu Davis
+
+//Benjamin Nukunu Davis
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -54,6 +55,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
     private String selectedCharacter; // Selected character from the character selection screen
     private Image playerSpriteLeft, playerSpriteRight; // Sprites for the selected character
+    private boolean isFacingLeft; // Flag to track player's facing direction
 
     public environment(String selectedCharacter) {
         this.selectedCharacter = selectedCharacter;
@@ -90,6 +92,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         currentWave = 0;
         bombUsesRemaining = BOMB_COOLDOWN;
         isPlayerBoxedIn = false;
+        isFacingLeft = false;
 
         // Default player name
         playerName = "Player";
@@ -140,6 +143,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 break;
         }
 
+        // Debugging
         System.out.println("Loading left sprite: " + leftSpritePath);
         System.out.println("Loading right sprite: " + rightSpritePath);
 
@@ -457,12 +461,10 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         Graphics2D g2d = (Graphics2D) g;
 
         // Draw the selected character's sprite
-        if (keysPressed[1]) { // Right key pressed
-            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
-        } else if (keysPressed[0]) { // Left key pressed
+        if (isFacingLeft) {
             g2d.drawImage(playerSpriteLeft, playerX, playerY, 50, 50, null);
         } else {
-            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null); // Default to right sprite
+            g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
         }
 
         // Draw the gun extension
@@ -514,8 +516,14 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     @Override
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_LEFT) keysPressed[0] = true; // Left
-        if (key == KeyEvent.VK_RIGHT) keysPressed[1] = true; // Right
+        if (key == KeyEvent.VK_LEFT) {
+            keysPressed[0] = true; // Left
+            isFacingLeft = true;
+        }
+        if (key == KeyEvent.VK_RIGHT) {
+            keysPressed[1] = true; // Right
+            isFacingLeft = false;
+        }
         if (key == KeyEvent.VK_UP) keysPressed[2] = true; // Up
         if (key == KeyEvent.VK_DOWN) keysPressed[3] = true; // Down
         if (key == KeyEvent.VK_SPACE) {
@@ -605,18 +613,8 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                         backgroundMusic.stop();
                     }
 
-                    // Transition to the EndPanel
-                    JFrame endFrame = new JFrame("Game Over");
-                    EndScreenPanel endPanel = new EndScreenPanel(endFrame, true); // Pass the JFrame and playEndMusic flag
-                    endFrame.add(endPanel); // Add the EndPanel to the JFrame
-                    endFrame.pack(); // Resize the JFrame to fit the EndPanel
-                    endFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // Close the application when the window is closed
-                    endFrame.setLocationRelativeTo(null); // Center the window on the screen
-                    endFrame.setVisible(true); // Show the EndPanel
-
-                    // Close the current game window
-                    JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(this);
-                    frame.dispose();
+                    // Start the fade-out animation
+                    startFadeOutAnimation();
                 }
             }
 
@@ -627,6 +625,36 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 
+    private void startFadeOutAnimation() {
+        // Create a timer for the fade-out effect
+        Timer fadeTimer = new Timer(10, new ActionListener() {
+            private float alpha = 1.0f; // Initial opacity
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                alpha -= 0.02f; // Reduce opacity
+                if (alpha <= 0) {
+                    // Stop the timer when the fade-out is complete
+                    ((Timer) e.getSource()).stop();
+
+                    // Transition to the EndPanel
+                    JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(environment.this);
+                    frame.getContentPane().removeAll(); // Remove the current panel
+                    EndScreenPanel endPanel = new EndScreenPanel(frame, true); // Create the EndPanel
+                    frame.add(endPanel); // Add the EndPanel to the frame
+                    frame.revalidate(); // Refresh the frame
+                    frame.repaint(); // Repaint the frame
+                } else {
+                    // Repaint the panel with the updated opacity
+                    repaint();
+                }
+            }
+        });
+
+        fadeTimer.start(); // Start the fade-out animation
+    }
+
+    
     @Override
     public void mouseReleased(MouseEvent e) {}
     @Override
