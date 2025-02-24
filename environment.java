@@ -123,8 +123,8 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 rightSpritePath = basePath + "rogue-ship-right.png";
                 break;
             case "assassin":
-                leftSpritePath = basePath + "assassin-ship-left.png";
-                rightSpritePath = basePath + "assassin-ship-right.png";
+                leftSpritePath = basePath + "assasin-ship-left.png";
+                rightSpritePath = basePath + "assasin-ship-right.png";
                 break;
             case "druid":
                 leftSpritePath = basePath + "druid-ship-left.png";
