@@ -57,3 +57,9 @@ World War I: Survive the trenches and fight against soldiers in a WW1-themed lev
 World War II: Take on advanced enemies in a WW2-inspired battlefield.
 
 Future Warfare: Face off against robots and futuristic enemies in a high-tech environment.
+
+
+
+Note: Since the game is still under development, in order to play, you need to customize the paths to correspond to your device after download. 
+Thank You!. 
+Enjoy!
