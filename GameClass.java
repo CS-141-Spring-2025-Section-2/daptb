@@ -1,5 +1,7 @@
 package daptb;
 
+// Abdelrahman Abdelhadi 
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -15,8 +17,8 @@ public class GameClass extends JFrame {
     private static final long serialVersionUID = 1L;
     private BufferedImage backgroundImage;
 
-    // Paths for background images
-    private String basePath = "/Users/dayspringidahosa/eclipse-workspace/_pasted_code_/src/daptb/";
+    // Paths for the background images( Issue with drawing the media from the resource folder
+    private String basePath = "C:\\\\Users\\\\benti\\\\eclipse-workspace\\\\Java_assignments\\\\src\\\\daptb\\\\";
     private String[] backgroundImages = {
         basePath + "2.jpg",
         basePath + "3.jpg",
@@ -83,7 +85,7 @@ public class GameClass extends JFrame {
             }
         });
 
-        // Play background music
+        
         playBackgroundMusic();
 
         // Add a mouse listener for the click sound
@@ -95,7 +97,11 @@ public class GameClass extends JFrame {
         });
     }
 
-    // Custom background panel that draws the background image
+    
+    
+    
+    
+    // Custom background panel to draws the background image
     class BackgroundPanel extends JPanel {
         private static final long serialVersionUID = 1L;
         @Override
@@ -124,6 +130,10 @@ public class GameClass extends JFrame {
         }
     }
 
+    
+    
+    
+    
     private void loadBackgroundMusic(String filePath) {
         try {
             File musicPath = new File(filePath);
@@ -146,6 +156,8 @@ public class GameClass extends JFrame {
         }
     }
 
+    
+    
     private void loadClickSound(String filePath) {
         try {
             File soundPath = new File(filePath);
@@ -182,14 +194,13 @@ public class GameClass extends JFrame {
         return button;
     }
 
-    // Instead of disposing the current frame, replace the content pane with the instructions panel
     private void startNewGame() {
         setContentPane(new InstructionsPanel());
         revalidate();
         repaint();
     }
 
-    // Replace the content pane with the character selection panel
+    // Replacing the content pane with the character selection panel
     private void openCharacterSelection() {
         setContentPane(new CharacterSelect());
         revalidate();
@@ -204,7 +215,7 @@ public class GameClass extends JFrame {
         int width = getWidth();
         int height = getHeight();
 
-        // Calculate scaling ratios
+        // Calculating the  scaling ratios
         double widthRatio = (double) width / INITIAL_WIDTH;
         double heightRatio = (double) height / INITIAL_HEIGHT;
 
@@ -212,7 +223,7 @@ public class GameClass extends JFrame {
         widthRatio = Math.max(widthRatio, 0.5);
         heightRatio = Math.max(heightRatio, 0.5);
 
-        // Resize and reposition the title label
+        // scaling and positioning the title label
         titleLabel.setFont(titleLabel.getFont().deriveFont((float) (48 * heightRatio)));
         titleLabel.setBounds(
             (int) (50 * widthRatio), 
@@ -221,7 +232,7 @@ public class GameClass extends JFrame {
             (int) (100 * heightRatio)
         );
 
-        // Resize and reposition the buttons
+        // Scaling the buttons
         resizeButton(newGameButton, 300, 150, widthRatio, heightRatio, width, height);
         resizeButton(selectCharacterButton, 300, 250, widthRatio, heightRatio, width, height);
         resizeButton(continueButton, 300, 350, widthRatio, heightRatio, width, height);
@@ -517,7 +528,7 @@ public class GameClass extends JFrame {
                 characterImageLabel.setIcon(scaleImageIcon(selected.icon, 400, 500));
                 confirmButton.setEnabled(true);
             } else if (e.getSource() == confirmButton) {
-                launchEnvironment(selectedCharacter);
+                switchToGameScreen(selectedCharacter);
             } else if (e.getSource() == resetButton) {
                 selectedCharacter = "";
                 selectedLabel.setText("Selected: None");
@@ -527,18 +538,29 @@ public class GameClass extends JFrame {
             }
         }
 
-        private void launchEnvironment(String selectedCharacter) {
-            // Dispose the current window and launch the environment
-            GameClass.this.dispose();
-            JFrame frame = new JFrame("Game Environment");
+        private void switchToGameScreen(String selectedCharacter) {
+            // Removing all components from the current window
+            GameClass.this.getContentPane().removeAll();
+
+            // Creating and adding the game environment to the window
             environment game = new environment(selectedCharacter);
-            frame.add(game);
-            frame.pack();
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
+            GameClass.this.add(game, BorderLayout.CENTER);
+
+            // Ensure the game environment inherits the same window size and state
+            game.setPreferredSize(GameClass.this.getSize()); // Set the preferred size to match the current window size
+            GameClass.this.pack(); // Refresh the window layout
+
+            // Revalidating and repainting to update the UI
+            GameClass.this.revalidate();
+            GameClass.this.repaint();
+
+            // Ensure the environment panel gets focus for key input
+            game.requestFocusInWindow();
+
+            // Start the game loop in a separate thread to avoid UI lag
             new Thread(game).start();
         }
+
 
         private ImageIcon scaleImageIcon(ImageIcon icon, int width, int height) {
             if (icon == null || icon.getImage() == null) return new ImageIcon();

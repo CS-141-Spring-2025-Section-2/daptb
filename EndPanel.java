@@ -1,5 +1,7 @@
 package daptb;
 
+// Phillip
+
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -28,6 +30,8 @@ public class EndPanel extends JFrame {
     }
 }
 
+
+
 class EndScreenPanel extends JPanel {
     private static Clip clip;  
     private Image backgroundImage;  
@@ -46,7 +50,7 @@ class EndScreenPanel extends JPanel {
 
         Font textFont = new Font("Impact", Font.ITALIC, 33);
 
-        // ✅ Create centered paragraph labels using HTML
+        // Creating centered paragraph labels using HTML
         JLabel text = createCenteredLabel("Congratulations! You have defeated the Final Boss and beat the game!", textFont, Color.GRAY);
         JLabel text2 = createCenteredLabel("Thank you for playing!", textFont, Color.GRAY);
         JLabel text3 = createCenteredLabel("Credits:", textFont, Color.WHITE);
@@ -54,7 +58,8 @@ class EndScreenPanel extends JPanel {
         JLabel text5 = createCenteredLabel("Press 'Esc' to return to the Main Menu.", textFont, Color.GREEN);
         JLabel text6 = createCenteredLabel("Press Delete on Mac/Backspace on Windows to exit.", textFont, Color.RED);
 
-        // ✅ Panel to hold text vertically
+        
+        // Panel to hold text vertically
         textContainer = new JPanel() {
             @Override
             protected void paintChildren(Graphics g) {
@@ -73,14 +78,14 @@ class EndScreenPanel extends JPanel {
         }
         textContainer.add(Box.createVerticalGlue());
 
-        // ✅ Center textContainer
+        // Centering the textContainer
         JPanel centerPanel = new JPanel(new GridBagLayout());
         centerPanel.setOpaque(false);  
         centerPanel.add(textContainer, new GridBagConstraints());  
 
         add(centerPanel, BorderLayout.CENTER);  
 
-        // Add key listener for Esc and Backspace keys
+        // Adding key listener for Esc and Backspace keys
         addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -91,21 +96,20 @@ class EndScreenPanel extends JPanel {
 
                     // Create the main menu
                     GameClass mainMenu = new GameClass();
-                    mainMenu.setExtendedState(JFrame.MAXIMIZED_BOTH); // Maximize the main menu
-                    mainMenu.setUndecorated(true); // Remove decorations (if needed)
-                    mainMenu.setVisible(true); // Make the main menu visible
-
-                    // Use a Timer to handle the fade-out of EndPanel
+                    mainMenu.setExtendedState(JFrame.MAXIMIZED_BOTH); // Enlarging the main menu
+                    mainMenu.setUndecorated(true); // Removing decorations
+                    mainMenu.setVisible(true); 
+                    
+                    // Timer to handle the fade-out of EndPanel
                     Timer fadeTimer = new Timer(50, null);
                     fadeTimer.addActionListener(new ActionListener() {
                         float opacity = 1f; // Start with 100% opacity for EndPanel
 
                         @Override
                         public void actionPerformed(ActionEvent evt) {
-                            opacity -= 0.05f; // Reduce opacity of EndPanel
-                            if (opacity <= 0f) {
+                            opacity -= 0.05f;                             if (opacity <= 0f) {
                                 fadeTimer.stop();
-                                parentFrame.dispose(); // Dispose of EndPanel after fade-out
+                                parentFrame.dispose(); // removing EndPanel after fade-out
                                 System.out.println("EndPanel disposed. Main menu is now active.");
                             } else {
                                 parentFrame.setOpacity(opacity); // Fade out EndPanel
@@ -128,8 +132,10 @@ class EndScreenPanel extends JPanel {
         textYPosition = getHeight() + 220;
         startTextAnimation();
     }
+    
+    
 
-    // ✅ Helper method to create centered JLabel with HTML for text alignment
+    // Helper method to create a centered JLabel with HTML for text alignment
     private JLabel createCenteredLabel(String text, Font font, Color color) {
         JLabel label = new JLabel("<html><div style='text-align: center; max-width: 1000px; '>" + text + "</div></html>", SwingConstants.CENTER);
         label.setFont(font);
@@ -138,6 +144,7 @@ class EndScreenPanel extends JPanel {
         return label;
     }
 
+    
     private void loadBackgroundImage(String filepath) {
         try (InputStream is = getClass().getResourceAsStream(filepath)) {
             if (is == null) {
@@ -157,6 +164,7 @@ class EndScreenPanel extends JPanel {
             g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);  
         }
     }
+    
 
     private static void playMusic(String filepath) {
         try (InputStream is = EndScreenPanel.class.getResourceAsStream(filepath)) {
@@ -165,22 +173,22 @@ class EndScreenPanel extends JPanel {
                 return;
             }
 
-            // Wrap the InputStream in a BufferedInputStream
+            // Wrapping the InputStream in a BufferedInputStream
             BufferedInputStream bufferedInputStream = new BufferedInputStream(is);
 
-            // Use the BufferedInputStream to create the AudioInputStream
+            // Using the BufferedInputStream to create the AudioInputStream
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedInputStream);
 
-            // Get the Clip and open it
+            // Getting the Clip and opening it
             clip = AudioSystem.getClip();
             clip.open(audioStream);
             System.out.println("Clip opened successfully."); // Debug statement
 
-            // Adjust volume (optional)
+            //  volume
             FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
             gainControl.setValue(6.0f); // Increase volume by 6 decibels
 
-            // Start the Clip
+            // Starting the Clip
             clip.start();
             System.out.println("Clip started successfully."); // Debug statement
             clip.loop(Clip.LOOP_CONTINUOUSLY); // Loop the music
@@ -189,6 +197,7 @@ class EndScreenPanel extends JPanel {
         }
     }
 
+    
     private static void stopMusic() {
         if (clip != null && clip.isRunning()) {
             clip.stop();
@@ -197,12 +206,12 @@ class EndScreenPanel extends JPanel {
     }
 
     private void startTextAnimation() {
-        timer = new Timer(80, new ActionListener() {  // Adjust the delay for speed control
+        timer = new Timer(80, new ActionListener() {  // delay adjusting for speed control
             @Override
             public void actionPerformed(ActionEvent e) {
-                textYPosition -= 1;  // Adjust the rise speed
+                textYPosition -= 1;  // Adjusting  the rising  speed
                 if (textYPosition + textContainer.getHeight() < 0) {
-                    textYPosition = getHeight();  // Reset to bottom if off-screen
+                    textYPosition = getHeight();  // Resetting to bottom if off-screen
                 }
                 textContainer.repaint();
             }

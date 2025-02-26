@@ -1,5 +1,8 @@
 package daptb;
 
+
+// Dayspring Idahosah
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -34,7 +37,7 @@ public class CharacterSelect extends JFrame implements ActionListener {
         JPanel bottomPanel = createBottomPanel();
         add(bottomPanel, BorderLayout.SOUTH);
 
-        // Make the window resizable and ensure components scale properly
+        // Making the window resizable and ensure components scale properly
         setResizable(true);
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
@@ -204,7 +207,7 @@ public class CharacterSelect extends JFrame implements ActionListener {
             selectedCharacter = selected.name;
             selectedLabel.setText("Selected: " + selectedCharacter);
             descriptionLabel.setText("<html><div style='width: 350px;'>" + selected.description + "</div></html>");
-            characterImageLabel.setIcon(scaleImageIcon(selected.icon, 400, 500)); // Larger image
+            characterImageLabel.setIcon(scaleImageIcon(selected.icon, 400, 500));
             confirmButton.setEnabled(true);
         } else if (e.getSource() == confirmButton) {
             // Launch the environment class with the selected character
@@ -218,8 +221,10 @@ public class CharacterSelect extends JFrame implements ActionListener {
         }
     }
 
+    
+    
     private void launchEnvironment(String selectedCharacter) {
-        // Close the character selection window
+        // Closing the character selection window
         this.dispose();
 
         // Create and launch the environment window
@@ -231,10 +236,13 @@ public class CharacterSelect extends JFrame implements ActionListener {
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
-        // Start the game loop
+        // Request focus for the game environment
+        game.requestFocusInWindow();
+
+        // Starting the game loop in a separate thread to avoid the UI lag we were experiencing
         new Thread(game).start();
     }
-
+    
     private ImageIcon scaleImageIcon(ImageIcon icon, int width, int height) {
         if (icon == null || icon.getImage() == null) return new ImageIcon();
         Image img = icon.getImage();

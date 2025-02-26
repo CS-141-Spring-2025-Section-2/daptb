@@ -15,80 +15,88 @@ import java.util.Iterator;
 import java.util.Random;
 
 public class environment extends JPanel implements KeyListener, Runnable, MouseListener, MouseMotionListener, ComponentListener {
-    private int WIDTH;  // Dynamic width
-    private int HEIGHT; // Dynamic height
-    private static final int PLAYER_SPEED = 5;
-    private static final int BULLET_SPEED = 10;
-    private static final int PLAYER_HEALTH = 60;
-    private static final int ENEMY_HEALTH = 5;
-    private static final int ENEMIES_PER_WAVE = 10;
-    private static final int TOTAL_ENEMIES = 25;
-    private static final int ENEMY_SHOOT_DISTANCE = 400; // Increased shooting distance
-    private static final int ENEMY_SPEED = 2;
+    // Game constants
+    private int WIDTH;  // Dynamic width of the game window
+    private int HEIGHT; // Dynamic height of the game window
+    private static final int PLAYER_SPEED = 5; // Speed of the player
+    private static final int BULLET_SPEED = 10; // Speed of bullets
+    private static final int PLAYER_HEALTH = 60; // Player's starting health
+    private static final int ENEMY_HEALTH = 5; // Enemy's starting health
+    private static final int ENEMIES_PER_WAVE = 10; // Number of enemies per wave
+    private static final int TOTAL_ENEMIES = 25; // Total enemies in the level
+    private static final int ENEMY_SHOOT_DISTANCE = 400; // Distance at which enemies shoot
+    private static final int ENEMY_SPEED = 2; // Speed of enemies
     private static final int ENEMY_STOP_DISTANCE = 100; // Distance at which enemies stop moving
     private static final int BOMB_RANGE = 200; // Range of the bomb
-    private static final int BOMB_COOLDOWN = 1; // Bomb can be used once per level
+    private static final int BOMB_COOLDOWN = 1; // Number of bomb uses per level
 
-    private int playerX, playerY;
-    private int playerHealth;
-    private boolean isGameRunning;
-    private ArrayList<Enemy> enemies;
-    private ArrayList<Bullet> playerBullets;
-    private ArrayList<Bullet> enemyBullets;
-    private ArrayList<Animation> animations; // For death animations
-    private int currentLevel;
-    private int enemiesRemaining;
-    private Font customFont;
-    private boolean[] keysPressed;
-    private int mouseX, mouseY;
-    private double playerAngle; // Angle for player rotation
-    private String playerName; // Player's name
+    // Game variables
+    private int playerX, playerY; // Player's position
+    private int playerHealth; // Player's current health
+    private boolean isGameRunning; // Flag to check if the game is running
+    private ArrayList<Enemy> enemies; // List of enemies
+    private ArrayList<Bullet> playerBullets; // List of player bullets
+    private ArrayList<Bullet> enemyBullets; // List of enemy bullets
+    private ArrayList<Animation> animations; // List of animations (e.g., explosions)
+    private int currentLevel; // Current level
+    private int enemiesRemaining; // Number of enemies remaining in the level
+    private Font customFont; // Custom font for the game
+    private boolean[] keysPressed; // Array to track which keys are pressed
+    private int mouseX, mouseY; // Mouse position
+    private double playerAngle; // Angle of the player's gun
+    private String playerName = "baptb customer"; // Player's name
     private boolean showLevelCompleteBanner; // Flag to show level complete banner
-    private Image backgroundImage; // Background image for each level
+    private Image backgroundImage; // Background image for the current level
     private Clip shootSound; // Sound clip for shooting
     private Clip backgroundMusic; // Sound clip for background music
-    private boolean isEnemySpawning; // Flag to control staggered enemy spawning
-    private long lastEnemySpawnTime; // Time of last enemy spawn
+    private boolean isEnemySpawning; // Flag to control enemy spawning
+    private long lastEnemySpawnTime; // Time of the last enemy spawn
     private int currentWave; // Current wave of enemies
     private int bombUsesRemaining; // Number of bomb uses remaining
     private boolean isPlayerBoxedIn; // Flag to check if the player is boxed in by enemies
 
+    // Player character
     private String selectedCharacter; // Selected character from the character selection screen
     private Image playerSpriteLeft, playerSpriteRight; // Sprites for the selected character
     private boolean isFacingLeft; // Flag to track player's facing direction
 
+    // Constructor
     public environment(String selectedCharacter) {
         this.selectedCharacter = selectedCharacter;
-        loadSprites();
+        loadSprites(); // Loading player sprites
+        SwingUtilities.invokeLater(() -> requestFocusInWindow());
 
-        // Initialize dynamic width and height
+        // Initializing game window size
         WIDTH = 800;
         HEIGHT = 600;
 
+        // Setting up the game panel
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
-        setFocusable(true);
-        addKeyListener(this);
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addComponentListener(this); // Add component listener for resizing
+        setFocusable(true); // Making sure the panel is focusable
+        addKeyListener(this); // Adding key listener for player movement
+        addMouseListener(this); // Adding mouse listener for shooting
+        addMouseMotionListener(this); // Adding mouse motion listener for aiming
+        addComponentListener(this); // Adding component listener for resizing
 
-        // Ask for the player's name
-        askForPlayerName();
-
-        playerX = WIDTH / 2 - 25; // Center player horizontally
-        playerY = HEIGHT / 2 - 25; // Center player vertically
+        // Initializing player position and health
+        playerX = WIDTH / 2 - 25; // Centering player horizontally
+        playerY = HEIGHT / 2 - 25; // Centering player vertically
         playerHealth = PLAYER_HEALTH;
         isGameRunning = true;
+
+        // Initializing lists
         enemies = new ArrayList<>();
         playerBullets = new ArrayList<>();
         enemyBullets = new ArrayList<>();
         animations = new ArrayList<>();
+
+        // Initializing game state
         currentLevel = 1;
         enemiesRemaining = TOTAL_ENEMIES;
-        keysPressed = new boolean[4];
+        keysPressed = new boolean[4]; // Tracking arrow keys (left, right, up, down)
         mouseX = playerX;
         mouseY = playerY;
-        playerAngle = 0; // Initial angle
+        playerAngle = 0; // Initial angle of the gun
         showLevelCompleteBanner = false;
         isEnemySpawning = false;
         lastEnemySpawnTime = 0;
@@ -97,36 +105,26 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         isPlayerBoxedIn = false;
         isFacingLeft = false;
 
-        loadCustomFont();
-        loadBackgroundImage(); // Load background for the current level
-        loadShootSound(); // Load the shooting sound
-        loadBackgroundMusic(); // Load background music
+        // Loading resources
+        loadCustomFont(); // Loading custom font
+        loadBackgroundImage(); // Loading background image for the current level
+        loadShootSound(); // Loading shooting sound
+        loadBackgroundMusic(); // Loading background music
+
+        // Starting the level
         startLevel();
     }
-    
-    
-    
-    private void askForPlayerName() {
-        // Prompt the user for their name
-        String name = JOptionPane.showInputDialog(this, "Enter your name:", "Player Name", JOptionPane.PLAIN_MESSAGE);
 
-        // If the user provides a name, store it; otherwise, use a default name
-        if (name != null && !name.trim().isEmpty()) {
-            playerName = name.trim(); // Store the trimmed name
-        } else {
-            playerName = "Player"; // Default name if no input is provided
-        }
-    }
     
-
+    
+    
+    // Loading player sprites based on the selected character
     private void loadSprites() {
-        // Base directory where the sprites are located
         String basePath = "C:\\Users\\benti\\eclipse-workspace\\Java_assignments\\src\\daptb\\";
-
         String leftSpritePath = "";
         String rightSpritePath = "";
 
-        // Determine sprite paths based on the selected character
+        // Determining sprite paths based on the selected character
         switch (selectedCharacter.toLowerCase()) {
             case "warrior":
                 leftSpritePath = basePath + "warrior-ship-left.png";
@@ -158,58 +156,42 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 break;
         }
 
-        // Debugging
-        System.out.println("Loading left sprite: " + leftSpritePath);
-        System.out.println("Loading right sprite: " + rightSpritePath);
-
+        // Loading left and right sprites
         try {
-            // Load left sprite
-            File leftFile = new File(leftSpritePath);
-            if (!leftFile.exists()) {
-                System.err.println("Error: Left sprite not found at " + leftFile.getAbsolutePath());
-            } else {
-                playerSpriteLeft = new ImageIcon(leftFile.getAbsolutePath()).getImage();
-            }
-
-            // Load right sprite
-            File rightFile = new File(rightSpritePath);
-            if (!rightFile.exists()) {
-                System.err.println("Error: Right sprite not found at " + rightFile.getAbsolutePath());
-            } else {
-                playerSpriteRight = new ImageIcon(rightFile.getAbsolutePath()).getImage();
-            }
+            playerSpriteLeft = new ImageIcon(leftSpritePath).getImage();
+            playerSpriteRight = new ImageIcon(rightSpritePath).getImage();
         } catch (Exception e) {
             System.err.println("Error loading sprites: " + e.getMessage());
-            // Optionally, set default sprites or handle the error as needed
         }
     }
 
+    
+    
+    
+    // Handling window resizing
     @Override
     public void componentResized(ComponentEvent e) {
-        // Update width and height when the window is resized
         WIDTH = getWidth();
         HEIGHT = getHeight();
-
-        // Reposition the player to the center
-        playerX = WIDTH / 2 - 25;
+        playerX = WIDTH / 2 - 25; // Re-centering player
         playerY = HEIGHT / 2 - 25;
-
-        // Repaint the game to reflect the new size
-        repaint();
+        repaint(); // Redrawing the game
     }
 
+    
+    
+    
+    // Unused component listener methods
     @Override
     public void componentMoved(ComponentEvent e) {}
-
     @Override
     public void componentShown(ComponentEvent e) {}
-
     @Override
     public void componentHidden(ComponentEvent e) {}
 
+    // Loading custom font
     private void loadCustomFont() {
         try {
-            // Load custom font from the classpath
             customFont = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("custom_font.ttf")).deriveFont(24f);
             GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             ge.registerFont(customFont);
@@ -219,26 +201,29 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 
+    
+    
+    // Loading background image for the current level
     private void loadBackgroundImage() {
         String imagePath = "";
         switch (currentLevel) {
             case 1:
-                imagePath = "egypt_background.jpg"; // Ancient Egypt
+                imagePath = "egypt_background.jpg";
                 break;
             case 2:
-                imagePath = "medieval_background.jpg"; // Medieval Europe
+                imagePath = "medieval_background.jpg";
                 break;
             case 3:
-                imagePath = "ww1_background.jpg"; // World War I
+                imagePath = "ww1_background.jpg";
                 break;
             case 4:
-                imagePath = "ww2_background.jpg"; // World War II
+                imagePath = "ww2_background.jpg";
                 break;
             case 5:
-                imagePath = "future_background.jpg"; // Future Warfare
+                imagePath = "future_background.jpg";
                 break;
             default:
-                imagePath = "default_background.jpg"; // Default background
+                imagePath = "default_background.jpg";
                 break;
         }
 
@@ -250,50 +235,63 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 
+    
+    
+    
+    
+    // Loading shooting sound
     private void loadShootSound() {
         try {
-            // Load the sound file from the classpath
             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("ak-47-14501.wav"));
             shootSound = AudioSystem.getClip();
             shootSound.open(audioInputStream);
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | NullPointerException e) {
+        } catch (Exception e) {
             System.out.println("Error loading shoot sound: " + e.getMessage());
         }
     }
 
+    
+    
+    
+    // Loading background music
     private void loadBackgroundMusic() {
         try {
-            // Load the background music file from the classpath
             AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(getClass().getResource("background_music.wav"));
             backgroundMusic = AudioSystem.getClip();
             backgroundMusic.open(audioInputStream);
-
-            // Set volume to 50% to ensure it's not too loud
             FloatControl gainControl = (FloatControl) backgroundMusic.getControl(FloatControl.Type.MASTER_GAIN);
-            gainControl.setValue(-3.0f); // Reduce volume by 3 decibels
-
-            backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY); // Loop the background music
-            backgroundMusic.start(); // Start playing the background music
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | NullPointerException e) {
+            gainControl.setValue(-3.0f); // Reducing volume
+            backgroundMusic.loop(Clip.LOOP_CONTINUOUSLY); // Looping music
+            backgroundMusic.start(); // Starting music
+        } catch (Exception e) {
             System.out.println("Error loading background music: " + e.getMessage());
         }
     }
 
+    // Playing shooting sound
     private void playShootSound() {
         if (shootSound != null) {
-            shootSound.setFramePosition(0); // Rewind the sound to the beginning
-            shootSound.start(); // Play the sound
+            shootSound.setFramePosition(0); // Rewinding sound
+            shootSound.start(); // Playing sound
         }
     }
 
+    // Starting the level
     private void startLevel() {
         isEnemySpawning = true;
         lastEnemySpawnTime = System.currentTimeMillis();
         currentWave = 0;
-        playerHealth = PLAYER_HEALTH; // Reset player health
-        bombUsesRemaining = BOMB_COOLDOWN; // Reset bomb uses
+        playerHealth = PLAYER_HEALTH; // Resetting player health
+        bombUsesRemaining = BOMB_COOLDOWN; // Resetting bomb uses
     }
+    
+    
+    
+    
+    
+    
 
+    // Spawning a wave of enemies
     private void spawnEnemyWave() {
         Random random = new Random();
         String era = getEraForLevel(currentLevel);
@@ -305,18 +303,13 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             int enemyY = 50 + (i / formationCols) * 50;
 
             Enemy enemy = createEnemy(enemyX, enemyY, ENEMY_HEALTH, currentLevel, era);
-
-            // Enable shooting from afar starting from level 2
-            if (currentLevel >= 2) {
-                enemy.setCanShootFromAfar(true);
-            }
-
             enemies.add(enemy);
             enemiesRemaining--;
         }
         currentWave++;
     }
 
+    // Getting the era for the current level
     private String getEraForLevel(int level) {
         switch (level) {
             case 1:
@@ -333,7 +326,12 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 return "Unknown";
         }
     }
+    
+    
+    
+    
 
+    // Creating an enemy
     private Enemy createEnemy(int x, int y, int health, int level, String era) {
         String enemyName = "";
         switch (level) {
@@ -350,7 +348,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 enemyName = "robot";
                 break;
             case 5:
-                enemyName = "robot"; // Future enemies are also robots
+                enemyName = "robot";
                 break;
             default:
                 enemyName = "default";
@@ -361,24 +359,25 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         Image enemySprite = null;
 
         try {
-            File enemyFile = new File(enemySpritePath);
-            if (enemyFile.exists()) {
-                enemySprite = new ImageIcon(enemyFile.getAbsolutePath()).getImage();
-            } else {
-                System.err.println("Error: Enemy sprite not found at " + enemyFile.getAbsolutePath());
-            }
+            enemySprite = new ImageIcon(enemySpritePath).getImage();
         } catch (Exception e) {
             System.err.println("Error loading enemy sprite: " + e.getMessage());
         }
 
         return new Enemy(x, y, health, enemyName, Color.RED, level, ENEMY_SPEED, "circle", era, enemySprite);
     }
+    
+    
+    
+    
+    
 
+    // Drawing the game
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
 
-        // Draw background
+        // Drawing background
         if (backgroundImage != null) {
             g.drawImage(backgroundImage, 0, 0, WIDTH, HEIGHT, this);
         } else {
@@ -389,21 +388,21 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             g2d.fillRect(0, 0, WIDTH, HEIGHT);
         }
 
-        // Draw player name banner at the top of the window
+        // Drawing player name banner
         drawPlayerNameBanner(g);
 
-        // Draw level name
+        // Drawing level name
         drawLevelName(g);
 
-        // Draw player
+        // Drawing player
         drawPlayer(g);
 
-        // Draw enemies
+        // Drawing enemies
         for (Enemy enemy : enemies) {
             enemy.draw(g);
         }
 
-        // Draw bullets
+        // Drawing bullets
         for (Bullet bullet : playerBullets) {
             bullet.draw(g);
         }
@@ -411,7 +410,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             bullet.draw(g);
         }
 
-        // Draw animations
+        // Drawing animations
         for (int i = animations.size() - 1; i >= 0; i--) {
             Animation animation = animations.get(i);
             animation.draw(g);
@@ -420,33 +419,41 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             }
         }
 
-        // Draw health bar
+        // Drawing health bar
         drawHealthBar(g);
 
-        // Draw level and enemies remaining
+        // Drawing level and enemies remaining
         g.setColor(Color.WHITE);
         g.setFont(customFont);
         g.drawString("Level: " + currentLevel, 10, 60);
         g.drawString("Enemies Remaining: " + (enemiesRemaining + enemies.size()), 10, 90);
 
-        // Draw bomb uses remaining
+        // Drawing bomb uses remaining
         g.drawString("Bombs: " + bombUsesRemaining, 10, 120);
 
-        // Draw level complete banner if needed
+        // Drawing level complete banner if needed
         if (showLevelCompleteBanner) {
             drawLevelCompleteBanner(g);
         }
     }
+    
+    
+    
+    
+    
+    
 
+    // Drawing player name banner
     private void drawPlayerNameBanner(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setColor(new Color(255, 255, 255, 150)); // Semi-transparent white
-        g2d.fillRoundRect(WIDTH / 2 - 150, 10, 300, 40, 20, 20); // Rounded rectangle centered at the top
+        g2d.fillRoundRect(WIDTH / 2 - 150, 10, 300, 40, 20, 20); // Rounded rectangle
         g2d.setColor(Color.BLACK);
         g2d.setFont(customFont.deriveFont(20f));
-        g2d.drawString("Player: " + playerName, WIDTH / 2 - 130, 35); // Player name centered
+        g2d.drawString("Player: " + playerName, WIDTH / 2 - 130, 35); // Player name
     }
-    
+
+    // Drawing level name
     private void drawLevelName(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         String levelName = "";
@@ -469,27 +476,38 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
         g2d.setColor(Color.MAGENTA);
         g2d.setFont(customFont.deriveFont(30f));
-        g2d.drawString(levelName, WIDTH / 2 - 100, HEIGHT - 20); // Display level name at the bottom
+        g2d.drawString(levelName, WIDTH / 2 - 100, HEIGHT - 20); // Displaying level name
     }
 
+    
+    
+    
+    
+    
+    // Drawing player
     private void drawPlayer(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
 
-        // Draw the selected character's sprite
+        // Drawing the selected character's sprite
         if (isFacingLeft) {
             g2d.drawImage(playerSpriteLeft, playerX, playerY, 50, 50, null);
         } else {
             g2d.drawImage(playerSpriteRight, playerX, playerY, 50, 50, null);
         }
 
-        // Draw the gun extension
+        // Drawing the gun extension
         int gunX = playerX + 25 + (int) (50 * Math.cos(playerAngle)); // Increased length
         int gunY = playerY + 25 + (int) (50 * Math.sin(playerAngle)); // Increased length
         g2d.setColor(Color.RED); // Changed to red
         g2d.setStroke(new BasicStroke(3)); // Thicker line
         g2d.drawLine(playerX + 25, playerY + 25, gunX, gunY);
     }
+    
+    
+    
+    
 
+    // Drawing health bar
     private void drawHealthBar(Graphics g) {
         int barWidth = 200;
         int barHeight = 20;
@@ -504,7 +522,12 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         g.setColor(Color.WHITE);
         g.drawRect(barX, barY, barWidth, barHeight);
     }
+    
+    
+    
+    
 
+    // Drawing level complete banner
     private void drawLevelCompleteBanner(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
         g2d.setColor(new Color(0, 0, 0, 200)); // Semi-transparent black
@@ -515,52 +538,60 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         g2d.drawString("Level " + currentLevel + " Complete!", WIDTH / 2 - 130, HEIGHT / 2 - 50);
         g2d.drawString("Advance?", WIDTH / 2 - 50, HEIGHT / 2 - 20);
 
-        // Draw "Continue" button
+        // Drawing "Continue" button
         g2d.setColor(Color.GREEN);
         g2d.fillRect(WIDTH / 2 - 120, HEIGHT / 2 + 10, 100, 40);
         g2d.setColor(Color.BLACK);
         g2d.drawString("Yes", WIDTH / 2 - 100, HEIGHT / 2 + 40);
 
-        // Draw "Quit" button
+        // Drawing "Quit" button
         g2d.setColor(Color.RED);
         g2d.fillRect(WIDTH / 2 + 20, HEIGHT / 2 + 10, 100, 40);
         g2d.setColor(Color.BLACK);
         g2d.drawString("No", WIDTH / 2 + 50, HEIGHT / 2 + 40);
     }
 
+    
+    
+    
+    
+    // Handling key presses
     @Override
-    // Control Keys
     public void keyPressed(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_A) { // Move left (A key)
-            keysPressed[0] = true;
+        if (key == KeyEvent.VK_LEFT) {
+            keysPressed[0] = true; // Left
             isFacingLeft = true;
         }
-        if (key == KeyEvent.VK_D) { // Move right (D key)
-            keysPressed[1] = true;
+        if (key == KeyEvent.VK_RIGHT) {
+            keysPressed[1] = true; // Right
             isFacingLeft = false;
         }
-        if (key == KeyEvent.VK_W) { // Move up (W key)
-            keysPressed[2] = true;
+        if (key == KeyEvent.VK_UP) {
+            keysPressed[2] = true; // Up
         }
-        if (key == KeyEvent.VK_S) { // Move down (S key)
-            keysPressed[3] = true;
+        if (key == KeyEvent.VK_DOWN) {
+            keysPressed[3] = true; // Down
         }
-        if (key == KeyEvent.VK_SPACE) { // Shoot (Spacebar)
-            // Shoot in the direction the player is facing
+        if (key == KeyEvent.VK_SPACE) {
+            // Shooting in the direction the player is facing
             double bulletSpeedX = BULLET_SPEED * Math.cos(playerAngle);
             double bulletSpeedY = BULLET_SPEED * Math.sin(playerAngle);
             playerBullets.add(new Bullet(playerX + 25, playerY + 25, bulletSpeedX, bulletSpeedY, Color.RED)); // Red bullets
-            playShootSound(); // Play the shooting sound
+            playShootSound(); // Playing the shooting sound
         }
-        if (key == KeyEvent.VK_G && bombUsesRemaining > 0) { // Activate bomb (G key)
+        if (key == KeyEvent.VK_G && bombUsesRemaining > 0) {
             activateBomb();
             bombUsesRemaining--;
         }
     }
 
+    
+    
+    
+    // Activating bomb
     private void activateBomb() {
-        // Find the three closest enemies
+        // Finding the three closest enemies
         ArrayList<Enemy> closestEnemies = new ArrayList<>();
         for (Enemy enemy : enemies) {
             double distance = Math.hypot(playerX - enemy.x, playerY - enemy.y);
@@ -572,118 +603,122 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             }
         }
 
-        // Kill the closest enemies
+        // Killing the closest enemies
         for (Enemy enemy : closestEnemies) {
-            animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10)); // Add death animation
+            animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10)); // Adding death animation
             enemies.remove(enemy);
         }
 
-        // Free the player if boxed in
+        // Freeing the player if boxed in
         isPlayerBoxedIn = false;
     }
 
-    
-  
+    // Handling key releases
     @Override
     public void keyReleased(KeyEvent e) {
         int key = e.getKeyCode();
-        if (key == KeyEvent.VK_A) { // Stop moving left (A key)
-            keysPressed[0] = false;
+        if (key == KeyEvent.VK_LEFT) {
+            keysPressed[0] = false; // Left
         }
-        if (key == KeyEvent.VK_D) { // Stop moving right (D key)
-            keysPressed[1] = false;
+        if (key == KeyEvent.VK_RIGHT) {
+            keysPressed[1] = false; // Right
         }
-        if (key == KeyEvent.VK_W) { // Stop moving up (W key)
-            keysPressed[2] = false;
+        if (key == KeyEvent.VK_UP) {
+            keysPressed[2] = false; // Up
         }
-        if (key == KeyEvent.VK_S) { // Stop moving down (S key)
-            keysPressed[3] = false;
+        if (key == KeyEvent.VK_DOWN) {
+            keysPressed[3] = false; // Down
         }
     }
+
+    // Unused key listener method
     @Override
     public void keyTyped(KeyEvent e) {}
 
+    // Handling mouse movement for aiming
     @Override
     public void mouseMoved(MouseEvent e) {
-        // Update player angle based on mouse position
         mouseX = e.getX();
         mouseY = e.getY();
         playerAngle = Math.atan2(mouseY - (playerY + 25), mouseX - (playerX + 25));
     }
+    
+    
+    
+    
 
+    // Unused mouse motion listener method
     @Override
-    public void mouseDragged(MouseEvent e) {
-        // This method is required by MouseMotionListener but is not used in this game
-    }
+    public void mouseDragged(MouseEvent e) {}
 
+    // Handling mouse clicks
     @Override
     public void mousePressed(MouseEvent e) {
         if (showLevelCompleteBanner) {
             int x = e.getX();
             int y = e.getY();
 
-            // Check if "Continue" button is clicked
+            // Checking if "Continue" button is clicked
             if (x >= WIDTH / 2 - 120 && x <= WIDTH / 2 - 20 && y >= HEIGHT / 2 + 10 && y <= HEIGHT / 2 + 50) {
                 showLevelCompleteBanner = false;
                 if (currentLevel < 5) {
                     currentLevel++;
                     enemiesRemaining = TOTAL_ENEMIES;
-                    loadBackgroundImage(); // Load new background for the next level
+                    loadBackgroundImage(); // Loading new background for the next level
                     startLevel();
                 } else {
                     // Player has completed the final level
-                    // Stop the shooting sound
                     if (shootSound != null && shootSound.isRunning()) {
                         shootSound.stop();
                     }
-
-                    // Stop the background music
                     if (backgroundMusic != null && backgroundMusic.isRunning()) {
                         backgroundMusic.stop();
                     }
-
-                    // Start the fade-out animation
-                    startFadeOutAnimation();
+                    startFadeOutAnimation(); // Starting fade-out animation
                 }
             }
 
-            // Check if "Quit" button is clicked
+            // Checking if "Quit" button is clicked
             if (x >= WIDTH / 2 + 20 && x <= WIDTH / 2 + 120 && y >= HEIGHT / 2 + 10 && y <= HEIGHT / 2 + 50) {
                 System.exit(0);
             }
         }
     }
+    
+    
+    
 
+    // Starting fade-out animation
     private void startFadeOutAnimation() {
-        // Create a timer for the fade-out effect
         Timer fadeTimer = new Timer(10, new ActionListener() {
             private float alpha = 1.0f; // Initial opacity
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                alpha -= 0.02f; // Reduce opacity
+                alpha -= 0.02f; // Reducing opacity
                 if (alpha <= 0) {
-                    // Stop the timer when the fade-out is complete
-                    ((Timer) e.getSource()).stop();
-
-                    // Transition to the EndPanel
+                    ((Timer) e.getSource()).stop(); // Stopping the timer
                     JFrame frame = (JFrame) SwingUtilities.getWindowAncestor(environment.this);
-                    frame.getContentPane().removeAll(); // Remove the current panel
-                    EndScreenPanel endPanel = new EndScreenPanel(frame, true); // Create the EndPanel
-                    frame.add(endPanel); // Add the EndPanel to the frame
-                    frame.revalidate(); // Refresh the frame
-                    frame.repaint(); // Repaint the frame
+                    frame.getContentPane().removeAll(); // Removing the current panel
+                    EndScreenPanel endPanel = new EndScreenPanel(frame, true); // Creating the EndPanel
+                    frame.add(endPanel); // Adding the EndPanel to the frame
+                    frame.revalidate(); // Refreshing the frame
+                    frame.repaint(); // Repainting the frame
                 } else {
-                    // Repaint the panel with the updated opacity
-                    repaint();
+                    repaint(); // Repainting the panel with the updated opacity
                 }
             }
         });
 
-        fadeTimer.start(); // Start the fade-out animation
+        fadeTimer.start(); // Starting the fade-out animation
     }
-
     
+    
+    
+    
+    
+
+    // Unused mouse listener methods
     @Override
     public void mouseReleased(MouseEvent e) {}
     @Override
@@ -693,6 +728,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
     @Override
     public void mouseExited(MouseEvent e) {}
 
+    // Game loop
     @Override
     public void run() {
         while (isGameRunning) {
@@ -708,8 +744,14 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         showGameOverPopup();
     }
 
+    
+    
+    
+    
+    
+    // Updating game state
     private void updateGame() {
-        // Update player position based on keys pressed
+        // Updating player position based on keys pressed
         if (!isPlayerBoxedIn) {
             if (keysPressed[0] && playerX > 0) playerX -= PLAYER_SPEED; // Left
             if (keysPressed[1] && playerX < WIDTH - 50) playerX += PLAYER_SPEED; // Right
@@ -717,12 +759,12 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             if (keysPressed[3] && playerY < HEIGHT - 50) playerY += PLAYER_SPEED; // Down
         }
 
-        // Spawn enemies in waves of 5
+        // Spawning enemies in waves
         if (isEnemySpawning && enemies.isEmpty() && enemiesRemaining > 0) {
             spawnEnemyWave();
         }
 
-        // Move enemies and make them shoot
+        // Moving enemies and making them shoot
         Iterator<Enemy> enemyIterator = enemies.iterator();
         while (enemyIterator.hasNext()) {
             Enemy enemy = enemyIterator.next();
@@ -730,66 +772,73 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             if (distanceToPlayer > ENEMY_STOP_DISTANCE) {
                 enemy.moveTowards(playerX, playerY, ENEMY_SPEED);
             } else {
-                // Stop moving and shoot
+                // Stopping and shooting
                 if (enemy.canShoot()) {
                     double angle = Math.atan2(playerY - enemy.y, playerX - enemy.x);
                     double bulletSpeedX = BULLET_SPEED * Math.cos(angle);
                     double bulletSpeedY = BULLET_SPEED * Math.sin(angle);
                     enemyBullets.add(new Bullet(enemy.x + 25, enemy.y + 25, bulletSpeedX, bulletSpeedY, Color.YELLOW));
                     enemy.resetShootCooldown();
-                    playShootSound(); // Play the shooting sound
+                    playShootSound(); // Playing the shooting sound
                 }
             }
 
-            // Avoid collisions with other enemies
+            // Avoiding collisions with other enemies
             enemy.avoidCollisions(enemies);
 
-            // Maintain distance between enemies
+            // Maintaining distance between enemies
             enemy.maintainDistance(enemies);
 
-            // Dodge bullets
+            // Dodging bullets
             for (Bullet bullet : playerBullets) {
                 double distanceToBullet = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
                 if (distanceToBullet < 50) { // If bullet is close
                     double angle = Math.atan2(bullet.y - enemy.y, bullet.x - enemy.x);
-                    enemy.x += 5 * Math.cos(angle + Math.PI / 2); // Move perpendicular to the bullet's trajectory
+                    enemy.x += 5 * Math.cos(angle + Math.PI / 2); // Moving perpendicular to the bullet's trajectory
                     enemy.y += 5 * Math.sin(angle + Math.PI / 2);
                 }
             }
         }
 
-        // Move player bullets and remove off-screen bullets
+        
+        
+        
+        // Moving player bullets and removing off-screen bullets
         Iterator<Bullet> playerBulletIterator = playerBullets.iterator();
         while (playerBulletIterator.hasNext()) {
             Bullet bullet = playerBulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                playerBulletIterator.remove(); // Remove off-screen bullets
+                playerBulletIterator.remove(); // Removing off-screen bullets
             }
         }
 
-        // Move enemy bullets and remove off-screen bullets
+        // Moving enemy bullets and removing off-screen bullets
         Iterator<Bullet> enemyBulletIterator = enemyBullets.iterator();
         while (enemyBulletIterator.hasNext()) {
             Bullet bullet = enemyBulletIterator.next();
             bullet.move();
             if (bullet.x < 0 || bullet.x > WIDTH || bullet.y < 0 || bullet.y > HEIGHT) {
-                enemyBulletIterator.remove(); // Remove off-screen bullets
+                enemyBulletIterator.remove(); // Removing off-screen bullets
             }
         }
 
-        // Check collisions
+        // Checking collisions
         checkCollisions();
 
-        // Check if the player is boxed in by enemies
+        // Checking if the player is boxed in by enemies
         checkIfPlayerIsBoxedIn();
 
-        // Check level completion
+        // Checking level completion
         if (enemies.isEmpty() && enemiesRemaining == 0) {
             showLevelCompleteBanner = true;
         }
     }
+    
+    
+    
 
+    // Checking if the player is boxed in by enemies
     private void checkIfPlayerIsBoxedIn() {
         int boxedInThreshold = 5; // Number of enemies required to box in the player
         int enemiesNearPlayer = 0;
@@ -808,51 +857,59 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 
+    
+    
+    // Checking collisions between bullets and enemies/player
     private void checkCollisions() {
-        // Create a copy of the playerBullets list to avoid concurrent modification
+        // Creating a copy of the playerBullets list to avoid concurrent modification
         ArrayList<Bullet> playerBulletsCopy = new ArrayList<>(playerBullets);
         ArrayList<Enemy> enemiesCopy = new ArrayList<>(enemies);
 
         // Player bullets hitting enemies
         for (Bullet bullet : playerBulletsCopy) {
-            if (bullet == null) continue; // Skip if bullet is null
+            if (bullet == null) continue; // Skipping null bullets
             for (Enemy enemy : enemiesCopy) {
+                if (enemy == null) continue; // Skipping null enemies
                 if (bullet.x >= enemy.x && bullet.x <= enemy.x + 50 &&
                     bullet.y >= enemy.y && bullet.y <= enemy.y + 50) {
                     enemy.health--;
                     if (enemy.health <= 0) {
-                        // Add death animation
                         animations.add(new Animation(enemy.x, enemy.y, 50, 50, 10));
-                        enemies.remove(enemy); // Remove the enemy from the original list
+                        enemies.remove(enemy); // Removing the enemy from the original list
                     }
-                    playerBullets.remove(bullet); // Remove the bullet from the original list
-                    break; // Exit the inner loop after handling the collision
+                    playerBullets.remove(bullet); // Removing the bullet from the original list
+                    break; // Exiting the inner loop after handling the collision
                 }
             }
         }
+        
+        
 
-        // Create a copy of the enemyBullets list to avoid concurrent modification
+        // Creating a copy of the enemyBullets list to avoid concurrent modification
         ArrayList<Bullet> enemyBulletsCopy = new ArrayList<>(enemyBullets);
 
         // Enemy bullets hitting player
         for (Bullet bullet : enemyBulletsCopy) {
-            if (bullet == null) continue; // Skip if bullet is null
+            if (bullet == null) continue; // Skipping null bullets
             if (bullet.x >= playerX && bullet.x <= playerX + 50 &&
                 bullet.y >= playerY && bullet.y <= playerY + 50) {
                 playerHealth--;
-                enemyBullets.remove(bullet); // Remove the bullet from the original list
+                enemyBullets.remove(bullet); // Removing the bullet from the original list
                 if (playerHealth <= 0) {
                     isGameRunning = false;
-                    restartLevel(); // Restart the current level on player death
+                    restartLevel(); // Restarting the current level on player death
                 }
-                break; // Exit the loop after handling the collision
+                break; // Exiting the loop after handling the collision
             }
         }
     }
+    
+    
 
+    // Restarting the current level
     private void restartLevel() {
-        playerX = WIDTH / 2 - 25; // Center player horizontally
-        playerY = HEIGHT / 2 - 25; // Center player vertically
+        playerX = WIDTH / 2 - 25; // Centering player horizontally
+        playerY = HEIGHT / 2 - 25; // Centering player vertically
         playerHealth = PLAYER_HEALTH;
         isGameRunning = true;
         enemies.clear();
@@ -862,15 +919,16 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         enemiesRemaining = TOTAL_ENEMIES;
         showLevelCompleteBanner = false;
 
-        // Reset enemy speed to default
+        // Resetting enemy speed to default
         for (Enemy enemy : enemies) {
-            enemy.resetSpeed(); // Add this method to the Enemy class
+            enemy.resetSpeed(); // Adding this method to the Enemy class
         }
 
         startLevel();
         new Thread(this).start();
     }
 
+    // Showing game over popup
     private void showGameOverPopup() {
         String[] options = {"Restart Level", "Quit"};
         int choice = JOptionPane.showOptionDialog(
@@ -885,17 +943,18 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         );
 
         if (choice == 0) {
-            restartLevel(); // Restart the current level
+            restartLevel(); // Restarting the current level after death
         } else {
             System.exit(0);
         }
     }
 
+    // Calculating final score
     private int calculateFinalScore() {
-        // Example calculation, you can adjust this based on your game's scoring system
         return (currentLevel * 1000) + (playerHealth * 10);
     }
 
+    // Main method to start the game
     public static void main(String[] args) {
         JFrame frame = new JFrame("Game Environment");
         environment game = new environment("Assassin"); // Default character for testing
@@ -917,7 +976,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         private Color color;
         private int speed; // Speed of the enemy
         private String shape; // Shape of the enemy
-        private String era; // Era of the enemy
+        private String era; // Era
         private boolean canShootFromAfar; // Flag to enable shooting from afar
         private Image sprite; // Enemy sprite
 
@@ -929,11 +988,11 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
             this.level = level;
             this.type = type;
             this.color = color;
-            this.speed = speed; // Set enemy speed based on level
-            this.shape = shape; // Set enemy shape
-            this.era = era; // Set enemy era
-            this.canShootFromAfar = false; // Default to not shooting from afar
-            this.sprite = sprite; // Set enemy sprite
+            this.speed = speed; // Setting enemy speed based on level
+            this.shape = shape; // Setting enemy shape
+            this.era = era; // Setting enemy era
+            this.canShootFromAfar = false; // Defaulting to not shooting from afar
+            this.sprite = sprite; // Setting enemy sprite
         }
 
         void setCanShootFromAfar(boolean canShootFromAfar) {
@@ -941,7 +1000,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
 
         void resetSpeed() {
-            // Reset speed to default based on level
+            // Resetting speed to default based on level
             switch (level) {
                 case 1:
                     speed = 2;
@@ -950,16 +1009,16 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                     speed = 3;
                     break;
                 case 3:
-                    speed = 4;
-                    break;
-                case 4:
-                    speed = 5;
-                    break;
-                case 5:
                     speed = 6;
                     break;
+                case 4:
+                    speed = 7;
+                    break;
+                case 5:
+                    speed = 8;
+                    break;
                 default:
-                    speed = 2; // Default speed
+                    speed = 2; 
                     break;
             }
         }
@@ -997,7 +1056,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 if (other != this) {
                     double distance = Math.hypot(x - other.x, y - other.y);
                     if (distance < minDistance) {
-                        // Move away from the other enemy
+                        // Moving away from the other enemy
                         double angle = Math.atan2(y - other.y, x - other.x);
                         x += (minDistance - distance) * Math.cos(angle);
                         y += (minDistance - distance) * Math.sin(angle);
@@ -1012,7 +1071,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
                 if (other != this) {
                     double distance = Math.hypot(x - other.x, y - other.y);
                     if (distance < minDistance) {
-                        // Move away from the other enemy
+                        // Moving away from the other enemy
                         double angle = Math.atan2(y - other.y, x - other.x);
                         x += (minDistance - distance) * Math.cos(angle);
                         y += (minDistance - distance) * Math.sin(angle);
@@ -1031,29 +1090,30 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
 
         void draw(Graphics g) {
             if (sprite != null) {
-                g.drawImage(sprite, x, y, 50, 50, null); // Draw enemy sprite
+                g.drawImage(sprite, x, y, 50, 50, null); // Drawing enemy sprite
             } else {
                 g.setColor(color);
                 switch (shape) {
                     case "circle":
-                        g.fillOval(x, y, 50, 50); // Draw enemy as a circle
+                        g.fillOval(x, y, 50, 50); // Drawing enemy as a circle
                         break;
                     case "rectangle":
-                        g.fillRect(x, y, 50, 50); // Draw enemy as a rectangle
+                        g.fillRect(x, y, 50, 50); // Drawing enemy as a rectangle
                         break;
                     case "triangle":
                         int[] xPoints = {x + 25, x, x + 50};
                         int[] yPoints = {y, y + 50, y + 50};
-                        g.fillPolygon(xPoints, yPoints, 3); // Draw enemy as a triangle
+                        g.fillPolygon(xPoints, yPoints, 3); // Drawing enemy as a triangle
                         break;
                     default:
-                        g.fillOval(x, y, 50, 50); // Default to circle
+                        g.fillOval(x, y, 50, 50); // Defaulting to circle
                         break;
                 }
             }
         }
     }
 
+    // Bullet class
     class Bullet {
         double x, y, speedX, speedY;
         Color color;
@@ -1077,6 +1137,7 @@ public class environment extends JPanel implements KeyListener, Runnable, MouseL
         }
     }
 
+    // Animation class
     class Animation {
         int x, y, width, height, frames;
         int currentFrame;
